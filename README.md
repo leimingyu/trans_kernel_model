@@ -44,3 +44,5 @@ If the d2h (stream-0) and h2d (stream-1) have concurrency, we assume there is no
 
 If the 3rd stream are launched, we schedule the h2d as the previous scheme, similar to stream-1. However, when there is h2d concurrency with prevous streams, even though it is launched, it will wait till one of the api call finishes before it **actually** transfers the data.
 
+## step 3: model concurrent kernel
+When the (N-1) stream comes in, if it had concurrency with previous stream (N-2), it will also check the timing with the streams before to adjust the runtime for N kernels.
