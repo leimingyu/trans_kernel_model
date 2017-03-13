@@ -31,4 +31,10 @@ host2kern_ovhd + Kernel + (knum - 1) * (kern_ovhd + Kernel) +
 kern2host_ovhd + D2H + (d2h_num - 1) * (d2h_ovhd + D2H)
 ```
 
-## step 2: 
+## step 2: model data transfer H2D
+We know that h2d api calls from different streams are launched in order. [check this](https://github.com/3upperm2n/h2d_overlapping)
+
+Until the h2d transfer time reaches a limit (which can be benchmarked), the second stream will not wait for the previous stream finishes all the h2d calls. We call this limit as **trans_ovlp_th**.
+
+
+
