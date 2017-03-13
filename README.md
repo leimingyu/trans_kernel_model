@@ -24,5 +24,11 @@ For kernel api, there are **host2kern_ovhd and kern_ovhd**  which mean that the 
 
 For d2h api, there are **kern2host_ovhd and d2h_ovhd** which stand for the overhead of launching d2h api after kernel call, and the overhead of launching d2h after d2h call.
 
+To sum up, we have the api call sequence for the single stream case.
+```python
+H2D + (h2d_num - 1) * (h2d_ovhd + H2D) + 
+host2kern_ovhd + Kernel + (knum - 1) * (kern_ovhd + Kernel) +
+kern2host_ovhd + D2H + (d2h_num - 1) * (d2h_ovhd + D2H)
+```
 
 ## step 2: 
