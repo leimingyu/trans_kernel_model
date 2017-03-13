@@ -42,5 +42,5 @@ If the two kernels in both streams have concurrency, we adjust the kernel execut
 
 If the d2h (stream-0) and h2d (stream-1) have concurrency, we assume there is no performance penalty since pcie-3 is full-duplex.
 
-If the 3rd stream are launched, we schedule the h2d as the previous scheme, similar to stream-1. However, when there is h2d concurrency with prevous streams, even though it is launched, it will wait till one of the api call finishes before it **actually** transferring the data.
+If the 3rd stream are launched, we schedule the h2d as the previous scheme, similar to stream-1. However, when there is h2d concurrency with prevous streams, even though it is launched, it will wait till one of the api call finishes before it **actually** transfers the data.
 
