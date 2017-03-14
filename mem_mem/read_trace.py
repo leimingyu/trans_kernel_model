@@ -116,6 +116,26 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef 
     return stream_id, api_type, start_time_ms, end_time_ms, kernelinfo
 
 
+
+def read_row_for_timing(df_row, start_coef_ms, duration_coef_ms):
+    """
+    Read the current row for the dataframe, extracting timing only.
+    """
+    stream_id = int(df_row['Stream'])
+    api_name = df_row['Name'].to_string()
+    start_time_ms = float(df_row['Start']) * start_coef_ms
+    end_time_ms = start_time_ms + float(df_row['Duration']) * duration_coef_ms
+
+    if "DtoH" in api_name:
+        api_type = 'd2h'
+    elif "HtoD" in api_name:
+        api_type = 'h2d'
+    else:
+        api_type = 'kern'
+
+    return stream_id, api_type, start_time_ms, end_time_ms
+
+
 def trace2dataframe(trace_file):
     """
     read the trace file into dataframe using pandas
@@ -250,3 +270,103 @@ def kernel_slowdown(s1_kernel_dd, s2_kernel_dd):
         v_s1 = s1_kernel_dd[0]
         slow_down_ratio_list.append(value / float(v_s1))
     return slow_down_ratio_list
+
+
+
+def model_param_from_trace(df_trace):
+    """
+    Extract api call and timings from trace of single stream. Return dataframe.
+    """
+    stream_id_list = df_trace['Stream'].unique()
+    stream_id_list = stream_id_list[~np.isnan(stream_id_list)] # remove nan
+    num_streams = len(stream_id_list)
+    #print('number of streams : {}'.format(num_streams))
+
+    streamList = [[]for i in range(num_streams)]
+    # print len(streamList)
+    
+    
+    start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
+    # print('{} {}'.format(start_coef, duration_coef))
+
+
+    for rowID in xrange(1, df_trace.shape[0]):
+        stream_id, api_type, start_time_ms, end_time_ms = read_row_for_timing(df_trace.iloc[[rowID]], 
+                                                                              start_coef, 
+                                                                              duration_coef)
+        # find out index of the stream
+        sid, = np.where(stream_id_list==stream_id)
+        # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
+        streamList[sid].append([api_type, start_time_ms, end_time_ms])
+
+
+    current_stream_list = streamList[0]
+    rows = len(current_stream_list)
+
+
+    #-----------------------------------------------------------------
+    # full api timing for current stream
+    #-----------------------------------------------------------------
+    df_stream = pd.DataFrame(columns=['seq', 'api_type', 'start', 'end'])
+
+    # record the 1st api call
+    local_api_type = current_stream_list[0][0]
+    local_start = current_stream_list[0][1]
+    local_end = current_stream_list[0][2]
+    df_stream = df_stream.append({'seq': 0, 'api_type': local_api_type, 
+                                  'start': local_start, 'end': local_end}, ignore_index=True)
+
+    for i in range(1, rows):
+        prev_api = current_stream_list[i-1][0]
+        prev_end = current_stream_list[i-1][2]
+
+        curr_api = current_stream_list[i][0]
+        # print curr_api
+        curr_start = current_stream_list[i][1]
+        curr_end   = current_stream_list[i][2]
+
+        #----------------
+        # add overhead
+        #----------------
+        add_ovhd = 0
+
+        if prev_api == 'h2d' and curr_api == 'h2d':    # h2d - h2d case
+            local_api = 'h2d_h2d_ovhd'
+            add_ovhd = 1
+
+        if prev_api == 'h2d' and curr_api == 'kern':   # h2d - kern case
+            local_api = 'h2d_kern_ovhd'
+            add_ovhd = 1
+
+        if prev_api == 'kern' and curr_api == 'kern':   # kern - kern case
+            local_api = 'kern_kern_ovhd'
+            add_ovhd = 1
+
+        if prev_api == 'kern' and curr_api == 'd2h':   # kern - d2h case
+            local_api = 'kern_d2h_ovhd'
+            add_ovhd = 1
+
+        if prev_api == 'd2h' and curr_api == 'd2h':   # d2h - d2h case
+            local_api = 'd2h_d2h_ovhd'
+            add_ovhd = 1
+
+        if add_ovhd == 1:
+            local_start = prev_end
+            local_end = curr_start
+            df_stream = df_stream.append({'seq': 0, 'api_type': local_api, 
+                                          'start': local_start, 'end': local_end}, ignore_index=True)
+
+        #----------------
+        # add current api
+        #----------------
+        df_stream = df_stream.append({'seq': 0, 'api_type': curr_api, 
+                                      'start': curr_start, 'end': curr_end}, ignore_index=True)
+
+
+    df_stream['duration'] = df_stream['end'] - df_stream['start']
+
+    # update the calling sequence
+    for index, row in df_stream.iterrows():
+        df_stream.loc[index, 'seq'] = index
+        
+    return df_stream
