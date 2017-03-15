@@ -57,5 +57,5 @@ We need first check whether the data transfer time exceeds the h2d_ovlp_threshol
 
 Then, we can ajust the starting point for each cuda stream. Add all the stream trace to the full trace table.
 
-<image src="Figs/mem_mem_2cke.png" height="250px">
+<image src="Figs/mem_mem_2cke.png" height="350px">
 
