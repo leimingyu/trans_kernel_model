@@ -466,3 +466,39 @@ def find_whentostart_comingStream(df_trace, H2D_H2D_OVLP_TH):
         
     return stream_start_time
 
+
+def find_h2ds_timing(df_trace):
+    """
+    find the h2d start and end for the current stream
+    """
+    h2ds_begin = 0
+    for index, row in df_trace.iterrows():
+        if row['api_type'] == 'h2d':
+            h2ds_begin = row.start # read the 1st h2d start
+            break
+           
+    h2ds_end = 0
+    for index, row in df_trace.iterrows():
+        if row['api_type'] == 'h2d':
+            h2ds_end = row.end # read the h2d end, till the kernel is met
+    
+        if row['api_type'] == 'kern':
+            break;
+            
+    return h2ds_begin, h2ds_end
+
+
+def find_kern_timing(df_trace):
+    """
+    find the h2d start and end for the current stream
+    """
+    kern_begin = 0
+    kern_end = 0
+    for index, row in df_trace.iterrows():
+        if row['api_type'] == 'kern':
+            kern_begin = row.start
+            kern_end = row.end
+            break;
+            
+    return kern_begin, kern_end
+
