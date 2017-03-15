@@ -56,3 +56,6 @@ At the beginning, we can offset the starting timing to 0, just for easy-reading.
 We need first check whether the data transfer time exceeds the h2d_ovlp_threshold. If it exceeds, the second stream api will start immediately after the threshold. Otherwise, it will wait all the h2d api calls to finish, then to start the the data transfer for the comming stream.
 
 Then, we can ajust the starting point for each cuda stream. Add all the stream trace to the full trace table.
+
+<image src="Figs/mem_mem_2cke.png" height="250px">
+
