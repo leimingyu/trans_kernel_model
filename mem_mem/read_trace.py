@@ -370,3 +370,99 @@ def model_param_from_trace(df_trace):
         df_stream.loc[index, 'seq'] = index
         
     return df_stream
+
+
+def model_param_from_trace_v1(df_trace):
+    """
+    Extract api call and timings from trace of single stream. Return dataframe.
+    """
+    stream_id_list = df_trace['Stream'].unique()
+    stream_id_list = stream_id_list[~np.isnan(stream_id_list)] # remove nan
+    num_streams = len(stream_id_list)
+    #print('number of streams : {}'.format(num_streams))
+
+    streamList = [[]for i in range(num_streams)]
+    # print len(streamList)
+    
+    
+    start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
+    # print('{} {}'.format(start_coef, duration_coef))
+
+
+    for rowID in xrange(1, df_trace.shape[0]):
+        stream_id, api_type, start_time_ms, end_time_ms = read_row_for_timing(df_trace.iloc[[rowID]], 
+                                                                              start_coef, 
+                                                                              duration_coef)
+        # find out index of the stream
+        sid, = np.where(stream_id_list==stream_id)
+        # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
+        streamList[sid].append([api_type, start_time_ms, end_time_ms])
+
+
+    current_stream_list = streamList[0]
+    rows = len(current_stream_list)
+
+
+    #-----------------------------------------------------------------
+    # api timing for current stream
+    #-----------------------------------------------------------------
+    df_stream = pd.DataFrame(columns=['api_type', 'start', 'end'])
+
+    for i in range(rows):
+        curr_api = current_stream_list[i][0]
+        # print curr_api
+        curr_start = current_stream_list[i][1]
+        curr_end   = current_stream_list[i][2]
+        #----------------
+        # add current api
+        #----------------
+        df_stream = df_stream.append({'api_type': curr_api, 
+                                      'start': curr_start, 'end': curr_end}, ignore_index=True)
+
+    df_stream['duration'] = df_stream['end'] - df_stream['start']
+        
+    return df_stream
+
+
+# reset the starting
+def reset_starting(df_org):
+    df_trace = df_org.copy(deep=True)
+    offset = df_trace.start[0]
+    #print offset
+    df_trace.start = df_trace.start - offset
+    df_trace.end = df_trace.end - offset
+    
+    return df_trace
+
+
+def find_whentostart_comingStream(df_trace, H2D_H2D_OVLP_TH):
+    h2d_ovlp = 0
+    h2d_ovlp_starttime = 0
+    
+    for index, row in df_trace.iterrows():
+        if row.api_type == 'h2d':
+            h2d_duation = row['duration']
+            h2d_ovlp_starttime = row['start']
+            if h2d_duation > H2D_H2D_OVLP_TH:
+                h2d_ovlp = 1
+                break
+            
+        if row.api_type == 'kern':
+            break
+
+    # if there is no overlapping for all h2d api, the second stream will start from the last h2d ending time
+    if h2d_ovlp == 0:
+        last_h2d_time = 0
+        for index, row in df_trace.iterrows():
+            if row.api_type == 'h2d':
+                last_h2d_time = row['end']            
+            if row.api_type == 'kern':
+                break
+        stream_start_time = last_h2d_time
+        
+    # if there is overlapping, we add the overlapping starting time with the overlapping threshold
+    if h2d_ovlp == 1:
+        stream_start_time = h2d_ovlp_starttime + H2D_H2D_OVLP_TH
+        
+    return stream_start_time
+
