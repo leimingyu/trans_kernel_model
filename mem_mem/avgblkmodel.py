@@ -1,6 +1,6 @@
 from math import *
-import pandas as pd
-import numpy as np
+#import pandas as pd
+#import numpy as np
 
 class DeviceInfo():
     def __init__(self, sm_num=0, sharedmem_per_sm=0, reg_per_sm=0, maxthreads_per_sm=0):
@@ -11,12 +11,13 @@ class DeviceInfo():
 
 
 class KernelInfo():
-    def __init__(self, blockDim=0, gridDim=0, reg_per_thread=0, sharedmem_per_blk=0, runtime_ms = 0):
+    def __init__(self, blockDim=0, gridDim=0, reg_per_thread=0, sharedmem_per_blk=0, runtime_ms = 0, avg_blk_time = 0):
         self.blockDim = blockDim
         self.gridDim = gridDim
         self.reg_per_thread = reg_per_thread
         self.sharedmem_per_blk =  sharedmem_per_blk
         self.runtime_ms = runtime_ms
+        self.avg_blk_time = avg_blk_time
 
 
 def MaxBLK_Per_SM(Gpu, Kern):
@@ -24,7 +25,7 @@ def MaxBLK_Per_SM(Gpu, Kern):
     Compute the max blocks on one SM
     """
     warp_size = 32
-    DeviceLimit = Gpu.maxthreads_per_sm / 32
+    DeviceLimit = Gpu.maxthreads_per_sm / warp_size
 
     blocks_by_sm = DeviceLimit
 
