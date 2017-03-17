@@ -427,9 +427,27 @@ def get_timing(df_trace):
 
 # ------------------------
 # Get total runtime from the trace.
+# trace table columns: stream 	api_type 	start 	end 	duration
 # ------------------------
 def getTotalRuntime(df_trace_new):
-    return float(df_trace_new.end.max()) - float(df_trace_new.start.min())
+    # case 1) the input is a list of dataframe
+    if isinstance(df_trace_new, list):
+        #print('it is list')
+        num_element = len(df_trace_new)
+        min_t = float(df_trace_new[0].start.min()) 
+        max_t = float(df_trace_new[0].end.max())
+        for i in range(1, num_element):
+            cur_min = float(df_trace_new[i].start.min())
+            cur_max = float(df_trace_new[i].end.max())
+            if cur_min < min_t: min_t = cur_min
+            if cur_max > max_t: max_t = cur_max
+
+        return cur_max - cur_min
+
+    # case 2) the input is a single dataframe
+    if isinstance(df_trace_new, pd.DataFrame):
+        #print('it is dataframe')
+        return float(df_trace_new.end.max()) - float(df_trace_new.start.min())
 
 
 # -------------------------
