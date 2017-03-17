@@ -124,7 +124,7 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef 
     return stream_id, api_type, start_time_ms, end_time_ms, kernelinfo
 
 
-def plot_trace(df_trace, save=False):
+def plot_trace(df_trace, savefig=False):
     """
     Plot the cuda timeline from trace file (pandas dataframe).
     """
@@ -242,5 +242,5 @@ def plot_trace(df_trace, save=False):
     
     plt.show()
 
-    if Save == True:
+    if savefig == True:
         fig.savefig('timeline_output.pdf')

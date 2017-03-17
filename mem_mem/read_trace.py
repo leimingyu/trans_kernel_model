@@ -84,6 +84,11 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef 
 
     kernelinfo = KernConfig()
 
+    if ssm_coef == None:
+        ssm_coef = 0.0
+    if dsm_coef == None:
+        dsm_coef = 0.0
+
     if "DtoH" in api_name:
         api_type = 'd2h'
     elif "HtoD" in api_name:
@@ -371,8 +376,10 @@ def model_param_from_trace(df_trace):
 
     return df_stream
 
-
-def model_param_from_trace_v1(df_trace):
+# --------------------------
+# get timing trace from the dataframe 
+# --------------------------
+def get_timing(df_trace, stream2plot = 's'):
     """
     Extract api call and timings from trace of single stream. Return dataframe.
     """
@@ -381,9 +388,8 @@ def model_param_from_trace_v1(df_trace):
     num_streams = len(stream_id_list)
     #print('number of streams : {}'.format(num_streams))
 
-    streamList = [[]for i in range(num_streams)]
+    streamList = [[] for i in range(num_streams)]
     # print len(streamList)
-
 
     start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
     # print('{} {}'.format(start_coef, duration_coef))
@@ -398,26 +404,27 @@ def model_param_from_trace_v1(df_trace):
         # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
         streamList[sid].append([api_type, start_time_ms, end_time_ms])
 
-
-    current_stream_list = streamList[0]
-    rows = len(current_stream_list)
-
-
-    #-----------------------------------------------------------------
     # api timing for current stream
-    #-----------------------------------------------------------------
     df_stream = pd.DataFrame(columns=['api_type', 'start', 'end'])
 
-    for i in range(rows):
-        curr_api = current_stream_list[i][0]
-        # print curr_api
-        curr_start = current_stream_list[i][1]
-        curr_end   = current_stream_list[i][2]
-        #----------------
-        # add current api
-        #----------------
-        df_stream = df_stream.append({'api_type': curr_api,
-                                      'start': curr_start, 'end': curr_end}, ignore_index=True)
+    if stream2plot == 's':
+        stream_plot_num = 1
+
+    if stream_plot_num == 1:
+        current_stream_list = streamList[0]
+        rows = len(current_stream_list)
+
+        for i in range(rows):
+            curr_api = current_stream_list[i][0]
+            # print curr_api
+            curr_start = current_stream_list[i][1]
+            curr_end   = current_stream_list[i][2]
+            # add current api
+            df_stream = df_stream.append({'api_type': curr_api,
+                                        'start': curr_start, 'end': curr_end}, ignore_index=True)
+    else:
+        # to do: read multi stream case
+        pass
 
     df_stream['duration'] = df_stream['end'] - df_stream['start']
 
