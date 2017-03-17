@@ -10,7 +10,9 @@ def init_trace_list(df_trace, stream_num = 1):
     df_cke_list = []
 
     for x in range(stream_num):
-        df_cke_list.append(df_trace.copy(deep=True))
+        df_dup = df_trace.copy(deep=True)
+        df_dup.stream = x # update the stream id
+        df_cke_list.append(df_dup)
 
     return df_cke_list
 

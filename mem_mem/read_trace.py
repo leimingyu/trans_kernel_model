@@ -379,7 +379,7 @@ def model_param_from_trace(df_trace):
 # --------------------------
 # get timing trace from the dataframe
 # --------------------------
-def get_timing(df_trace, stream2plot = 's'):
+def get_timing(df_trace):
     """
     Extract api call and timings from trace of single stream. Return dataframe.
     """
@@ -405,13 +405,11 @@ def get_timing(df_trace, stream2plot = 's'):
         streamList[sid].append([api_type, start_time_ms, end_time_ms])
 
     # api timing for current stream
-    df_stream = pd.DataFrame(columns=['api_type', 'start', 'end'])
+    df_stream = pd.DataFrame(columns=['stream', 'api_type', 'start', 'end'])
 
-    if stream2plot == 's':
-        stream_plot_num = 1
-
-    if stream_plot_num == 1:
-        current_stream_list = streamList[0]
+    # for each stream: update the trace
+    for sid in range(num_streams):
+        current_stream_list = streamList[sid]
         rows = len(current_stream_list)
 
         for i in range(rows):
@@ -420,15 +418,19 @@ def get_timing(df_trace, stream2plot = 's'):
             curr_start = current_stream_list[i][1]
             curr_end   = current_stream_list[i][2]
             # add current api
-            df_stream = df_stream.append({'api_type': curr_api,
+            df_stream = df_stream.append({'stream': sid, 'api_type': curr_api,
                                         'start': curr_start, 'end': curr_end}, ignore_index=True)
-    else:
-        # to do: read multi stream case
-        pass
 
     df_stream['duration'] = df_stream['end'] - df_stream['start']
-
     return df_stream
+
+
+# ------------------------
+# Get total runtime from the trace.
+# ------------------------
+def getTotalRuntime(df_trace_new):
+    return float(df_trace_new.end.max()) - float(df_trace_new.start.min())
+
 
 # -------------------------
 # Reset the start time to zero for the input dataframe trace.
