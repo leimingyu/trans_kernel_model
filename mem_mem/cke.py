@@ -3,6 +3,19 @@ import pandas as pd
 import numpy as np
 from avgblkmodel import *
 
+
+#---------------------------------------------
+# deep copy the timing trace  
+#---------------------------------------------
+def init_trace_list(df_trace, stream_num = 1):
+    df_cke_list = []
+
+    for x in range(stream_num):
+        df_cke_list.append(df_trace.copy(deep=True))
+        
+    return df_cke_list
+
+
 #---------------------------------------------
 # model cke function
 #---------------------------------------------

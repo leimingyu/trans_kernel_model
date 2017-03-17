@@ -430,15 +430,15 @@ def get_timing(df_trace, stream2plot = 's'):
 
     return df_stream
 
-
-# reset the starting
+# -------------------------
+# Reset the start time to zero for the input dataframe trace.
+# -------------------------
 def reset_starting(df_org):
     df_trace = df_org.copy(deep=True)
     offset = df_trace.start[0]
     #print offset
     df_trace.start = df_trace.start - offset
     df_trace.end = df_trace.end - offset
-
     return df_trace
 
 
