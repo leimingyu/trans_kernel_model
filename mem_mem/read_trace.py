@@ -377,7 +377,7 @@ def model_param_from_trace(df_trace):
     return df_stream
 
 # --------------------------
-# get timing trace from the dataframe 
+# get timing trace from the dataframe
 # --------------------------
 def get_timing(df_trace, stream2plot = 's'):
     """
@@ -442,36 +442,6 @@ def reset_starting(df_org):
     return df_trace
 
 
-def find_whentostart_comingStream(df_trace, H2D_H2D_OVLP_TH):
-    h2d_ovlp = 0
-    h2d_ovlp_starttime = 0
-
-    for index, row in df_trace.iterrows():
-        if row.api_type == 'h2d':
-            h2d_duation = row['duration']
-            h2d_ovlp_starttime = row['start']
-            if h2d_duation > H2D_H2D_OVLP_TH:
-                h2d_ovlp = 1
-                break
-
-        if row.api_type == 'kern':
-            break
-
-    # if there is no overlapping for all h2d api, the second stream will start from the last h2d ending time
-    if h2d_ovlp == 0:
-        last_h2d_time = 0
-        for index, row in df_trace.iterrows():
-            if row.api_type == 'h2d':
-                last_h2d_time = row['end']
-            if row.api_type == 'kern':
-                break
-        stream_start_time = last_h2d_time
-
-    # if there is overlapping, we add the overlapping starting time with the overlapping threshold
-    if h2d_ovlp == 1:
-        stream_start_time = h2d_ovlp_starttime + H2D_H2D_OVLP_TH
-
-    return stream_start_time
 
 
 def find_h2ds_timing(df_trace):

@@ -3,18 +3,56 @@ import pandas as pd
 import numpy as np
 from avgblkmodel import *
 
-
 #---------------------------------------------
-# deep copy the timing trace  
+# deep copy the timing trace
 #---------------------------------------------
 def init_trace_list(df_trace, stream_num = 1):
     df_cke_list = []
 
     for x in range(stream_num):
         df_cke_list.append(df_trace.copy(deep=True))
-        
+
     return df_cke_list
 
+
+#---------------------------------------------
+# Find out when to start current stream.
+#---------------------------------------------
+def find_h2d_start(df_trace, H2D_H2D_OVLP_TH):
+    h2d_ovlp = 0
+    h2d_starttime = 0
+
+    for index, row in df_trace.iterrows():
+        if row.api_type == 'h2d':
+            h2d_duation = row['duration']
+            h2d_starttime = row['start']  # record the latest h2d
+            if h2d_duation > H2D_H2D_OVLP_TH:
+                h2d_ovlp = 1
+                break
+
+        if row.api_type == 'kern': # break when the next is kernel
+            break
+
+    stream_start_time = 0.0
+
+    # if there is no overlapping for all h2d api,
+    # the second stream will start from the last h2d ending time
+    if h2d_ovlp == 0:
+        """
+        last_h2d_time = 0
+        for index, row in df_trace.iterrows():
+            if row.api_type == 'h2d':
+                last_h2d_time = row['end']
+            if row.api_type == 'kern':
+                break
+        """
+        stream_start_time = h2d_starttime
+
+    # if there is overlapping, we add the overlapping starting time with the overlapping threshold
+    if h2d_ovlp == 1:
+        stream_start_time = h2d_starttime + H2D_H2D_OVLP_TH
+
+    return stream_start_time
 
 #---------------------------------------------
 # model cke function
