@@ -59,3 +59,8 @@ Then, we can ajust the starting point for each cuda stream. Add all the stream t
 
 <image src="Figs/mem_mem_2cke.png" height="350px">
 
+After modeling the case, where there is current kernel execution, we will get the following trace as the example.
+
+<image src="Figs/mem_mem_2cke_model.png" height="350px">
+
+
