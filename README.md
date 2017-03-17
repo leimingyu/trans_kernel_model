@@ -63,4 +63,4 @@ After modeling the case, where there is current kernel execution, we will get th
 
 <image src="Figs/mem_mem_2cke_model.png" height="350px">
 
-
+For this case, the ground truth is 0.309537 ms, our model prediction is 0.336481 ms. We overstimate the runtime with an error of 8.7%.
