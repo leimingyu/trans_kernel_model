@@ -4,9 +4,10 @@ import operator
 
 
 class transfer():
-    def __init__(self, start=0.0,end=0.0):
+    def __init__(self, start=0.0, end=0.0, trans_size = 0.0):
         self.start_time_ms = start
         self.end_time_ms = end
+        self.size = trans_size 
 
 
 class KernConfig():
@@ -101,16 +102,15 @@ def trans_coef_kb(df_trace):
 # Read the current row of the input dataframe trace.
 # Return : stream_id, api_type, start, end, kerninfo   
 #------------------------------------------------------------------------------
-def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef = None):
-    start_time_ms = float(df_row['Start']) * start_coef_ms
-
-    end_time_ms = start_time_ms + float(df_row['Duration']) * duration_coef_ms
-
+def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, 
+        dsm_coef = None, trans_coef = 1.0):
+    # output paramters
     stream_id = int(df_row['Stream'])
-
+    start_time_ms = float(df_row['Start']) * start_coef_ms
+    end_time_ms = start_time_ms + float(df_row['Duration']) * duration_coef_ms
     api_name = df_row['Name'].to_string()
-
     kernelinfo = KernConfig()
+    trans_kb = None
 
     if ssm_coef == None:
         ssm_coef = 0.0
@@ -119,8 +119,10 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef 
 
     if "DtoH" in api_name:
         api_type = 'd2h'
+        trans_kb = float(df_row.Size) * trans_coef # d2h size in KB
     elif "HtoD" in api_name:
         api_type = 'h2d'
+        trans_kb = float(df_row.Size) * trans_coef # h2d size in KB
     else:
         api_type = 'kernel'
         # read kernel and update the info
@@ -146,7 +148,7 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef 
         kernelinfo.regs_per_thread = regs_per_thread
         kernelinfo.sm_per_block = sm_per_block
 
-    return stream_id, api_type, start_time_ms, end_time_ms, kernelinfo
+    return stream_id, api_type, start_time_ms, end_time_ms, kernelinfo, trans_kb
 
 
 
@@ -211,19 +213,23 @@ def get_stream_info(df_trace):
 
     ssm_coef, dsm_coef = sm_coef_bytes(df_trace)
 
+    trans_coef = trans_coef_kb(df_trace) # normalize the transfer size to KB
+
     # read row by row
     for rowID in xrange(1, df_trace.shape[0]):
         #  extract info from the current row
-        stream_id, api_type, start_time_ms, end_time_ms, kerninfo = read_row(df_trace.iloc[[rowID]], start_coef, duration_coef, ssm_coef, dsm_coef)
+        stream_id, api_type, start_time_ms, end_time_ms, kerninfo, Tkb = \
+                read_row(df_trace.iloc[[rowID]], start_coef, duration_coef, 
+                        ssm_coef, dsm_coef, trans_coef)
 
         # find out index of the stream
         sid, = np.where(stream_id_list==stream_id)
 
         # add the start/end time for different api calls
         if api_type == 'h2d':
-            streamList[sid].h2d.append(transfer(start_time_ms, end_time_ms))
+            streamList[sid].h2d.append(transfer(start_time_ms, end_time_ms, Tkb))
         elif api_type == 'd2h':
-            streamList[sid].d2h.append(transfer(start_time_ms, end_time_ms))
+            streamList[sid].d2h.append(transfer(start_time_ms, end_time_ms, Tkb))
         elif api_type == 'kernel':
             streamList[sid].kernel.append(transfer(start_time_ms, end_time_ms))
             streamList[sid].kernel_info.append(kerninfo) # add the kernel info
