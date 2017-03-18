@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import operator
+import sys
 
 
 class transfer():
@@ -93,9 +94,9 @@ def trans_coef_kb(df_trace):
     elif size_unit == 'GB':
         size_coef = 1e6
     else:
-        print("Unkown Size Units.\n", file=sys.stderr)
+        sys.stderr.write('Unknown Size Unit.\n')
 
-    return trans_coef 
+    return size_coef 
 
 
 #------------------------------------------------------------------------------
@@ -151,24 +152,31 @@ def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None,
     return stream_id, api_type, start_time_ms, end_time_ms, kernelinfo, trans_kb
 
 
-
-def read_row_for_timing(df_row, start_coef_ms, duration_coef_ms):
+#------------------------------------------------------------------------------
+#  Read current row of the dataframe, return timing and transfer_size
+#------------------------------------------------------------------------------
+def read_row_for_timing(df_row, start_coef_ms, duration_coef_ms, trans_coef=0.0):
     """
     Read the current row for the dataframe, extracting timing only.
     """
+    # parameters
     stream_id = int(df_row['Stream'])
     api_name = df_row['Name'].to_string()
     start_time_ms = float(df_row['Start']) * start_coef_ms
     end_time_ms = start_time_ms + float(df_row['Duration']) * duration_coef_ms
 
+    trans_kb = 0.0 
+
     if "DtoH" in api_name:
         api_type = 'd2h'
+        trans_kb = float(df_row.Size) * trans_coef # d2h size in KB
     elif "HtoD" in api_name:
         api_type = 'h2d'
+        trans_kb = float(df_row.Size) * trans_coef # d2h size in KB
     else:
         api_type = 'kern'
 
-    return stream_id, api_type, start_time_ms, end_time_ms
+    return stream_id, api_type, start_time_ms, end_time_ms, trans_kb
 
 
 def trace2dataframe(trace_file):
@@ -289,7 +297,8 @@ def get_kernel_time_from_trace(df_trace):
     # read row by row
     for rowID in xrange(1, df_trace.shape[0]):
         #  extract info from the current row
-        stream_id, api_type, start_time_ms, end_time_ms, _ =  read_row(df_trace.iloc[[rowID]], start_coef, duration_coef)
+        stream_id, api_type, start_time_ms, end_time_ms, _ =  \
+                read_row(df_trace.iloc[[rowID]], start_coef, duration_coef)
 
         # find out index of the stream
         sid, = np.where(stream_id_list == stream_id)
@@ -321,18 +330,17 @@ def model_param_from_trace(df_trace):
     num_streams = len(stream_id_list)
     #print('number of streams : {}'.format(num_streams))
 
-    streamList = [[]for i in range(num_streams)]
-    # print len(streamList)
-
+    streamList = [[] for i in range(num_streams)]
 
     start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
-    # print('{} {}'.format(start_coef, duration_coef))
 
+    trans_coef = trans_coef_kb(df_trace) # normalize the transfer size to KB
 
     for rowID in xrange(1, df_trace.shape[0]):
-        stream_id, api_type, start_time_ms, end_time_ms = read_row_for_timing(df_trace.iloc[[rowID]],
-                                                                              start_coef,
-                                                                              duration_coef)
+        stream_id, api_type, start_time_ms, end_time_ms = \
+                read_row_for_timing(df_trace.iloc[[rowID]], start_coef, 
+                        duration_coef, trans_coef)
+
         # find out index of the stream
         sid, = np.where(stream_id_list==stream_id)
         # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
@@ -410,6 +418,7 @@ def model_param_from_trace(df_trace):
 
     return df_stream
 
+
 # --------------------------
 # get timing trace from the dataframe
 # --------------------------
@@ -420,26 +429,24 @@ def get_timing(df_trace):
     stream_id_list = df_trace['Stream'].unique()
     stream_id_list = stream_id_list[~np.isnan(stream_id_list)] # remove nan
     num_streams = len(stream_id_list)
-    #print('number of streams : {}'.format(num_streams))
 
     streamList = [[] for i in range(num_streams)]
-    # print len(streamList)
 
     start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
-    # print('{} {}'.format(start_coef, duration_coef))
-
+    trans_coef = trans_coef_kb(df_trace) # normalize the transfer size to KB
 
     for rowID in xrange(1, df_trace.shape[0]):
-        stream_id, api_type, start_time_ms, end_time_ms = read_row_for_timing(df_trace.iloc[[rowID]],
-                                                                              start_coef,
-                                                                              duration_coef)
+        stream_id, api_type, start_time_ms, end_time_ms, trans_kb = \
+                read_row_for_timing(df_trace.iloc[[rowID]], start_coef, 
+                        duration_coef, trans_coef)
+
         # find out index of the stream
         sid, = np.where(stream_id_list==stream_id)
         # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
-        streamList[sid].append([api_type, start_time_ms, end_time_ms])
+        streamList[sid].append([api_type, start_time_ms, end_time_ms, trans_kb])
 
     # api timing for current stream
-    df_stream = pd.DataFrame(columns=['stream', 'api_type', 'start', 'end'])
+    df_stream = pd.DataFrame(columns=['stream', 'api_type', 'start', 'end', 'size'])
 
     # for each stream: update the trace
     for sid in range(num_streams):
@@ -451,9 +458,14 @@ def get_timing(df_trace):
             # print curr_api
             curr_start = current_stream_list[i][1]
             curr_end   = current_stream_list[i][2]
+            curr_size  = current_stream_list[i][3]
+
             # add current api
-            df_stream = df_stream.append({'stream': sid, 'api_type': curr_api,
-                                        'start': curr_start, 'end': curr_end}, ignore_index=True)
+            df_stream = df_stream.append({'stream': sid,
+                'api_type': curr_api, 
+                'start': curr_start, 
+                'end': curr_end,
+                'size': curr_size}, ignore_index=True)
 
     df_stream['duration'] = df_stream['end'] - df_stream['start']
     return df_stream
