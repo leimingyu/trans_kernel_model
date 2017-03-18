@@ -31,7 +31,9 @@ class streams():
         self.kernel = []
         self.kernel_info = []
 
-
+#------------------------------------------------------------------------------
+# Use ms for timing
+#------------------------------------------------------------------------------
 def time_coef_ms(df_trace):
     rows, cols = df_trace.shape
 
@@ -53,6 +55,9 @@ def time_coef_ms(df_trace):
     return start_coef, duration_coef
 
 
+#------------------------------------------------------------------------------
+# Use bytes for shared memory 
+#------------------------------------------------------------------------------
 def sm_coef_bytes(df_trace):
     ssm_unit = df_trace['Static SMem'].iloc[0]
     dsm_unit = df_trace['Dynamic SMem'].iloc[0]
@@ -72,7 +77,30 @@ def sm_coef_bytes(df_trace):
     return ssm_coef, dsm_coef
 
 
-# read data for the current row
+#------------------------------------------------------------------------------
+# Use KB for data transfer 
+#------------------------------------------------------------------------------
+def trans_coef_kb(df_trace):
+    size_unit = df_trace['Size'].iloc[0]
+
+    size_coef = 1.0 # KB
+
+    if size_unit == 'B':
+        size_coef = 1e-3
+    elif size_unit == 'MB':
+        size_coef = 1e3
+    elif size_unit == 'GB':
+        size_coef = 1e6
+    else:
+        print("Unkown Size Units.\n", file=sys.stderr)
+
+    return trans_coef 
+
+
+#------------------------------------------------------------------------------
+# Read the current row of the input dataframe trace.
+# Return : stream_id, api_type, start, end, kerninfo   
+#------------------------------------------------------------------------------
 def read_row(df_row, start_coef_ms, duration_coef_ms, ssm_coef = None, dsm_coef = None):
     start_time_ms = float(df_row['Start']) * start_coef_ms
 
