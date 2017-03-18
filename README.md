@@ -64,3 +64,14 @@ After modeling the case, where there is current kernel execution, we will get th
 <image src="Figs/mem_mem_2cke_model.png" height="350px">
 
 For this case, the ground truth is 0.309537 ms, our model prediction is 0.336481 ms. We overstimate the runtime with an error of 8.7%.
+
+### algo for h2d transfer
+For the 1st stream, check the h2d has overlap with other stream h2d. If no overlapping, start the next h2d or other api.
+
+If there is overlapping with another stream, we need to update the h2d timing for both streams (extend / offset the prolonged runtime for all the api call).
+
+After that, check during the updated interval of 1st stream h2d, whether there is another stream h2d (going through all the other stream info).
+
+If not, we will prioritize the ongoing h2d stream and find the earliest running h2d. Start the overlapping prediction again.
+
+
