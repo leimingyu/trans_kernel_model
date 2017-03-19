@@ -4,7 +4,8 @@ import numpy as np
 from avgblkmodel import *
 
 #------------------------------------------------------------------------------
-# deep copy the timing trace
+# Deep copy the timing trace
+# for multiple cuda stream case, each trace will be appended to a list
 #------------------------------------------------------------------------------
 def init_trace_list(df_trace, stream_num = 1):
     df_cke_list = []
@@ -15,6 +16,41 @@ def init_trace_list(df_trace, stream_num = 1):
         df_cke_list.append(df_dup)
 
     return df_cke_list
+
+
+#------------------------------------------------------------------------------
+# Sort api at the 1st time.
+# Return the sorted dataframe from the df_cke_list 
+#------------------------------------------------------------------------------
+def init_sort_api(df_cke_list):
+    columns_ = ['start', 'end', 'api_type', 'size_kb', 'stream_id', 'status']
+    df_all_api = pd.DataFrame(columns=columns_) # init
+    stream_num = len(df_cke_list)
+    #-------------------------------
+    for i in range(stream_num): # read each stream
+        stream_id = i
+        df_current = df_cke_list[i]
+        rows = df_current.shape[0]
+        for j in range(rows): # read each row
+            start_t = df_current['start'][j]
+            end_t = df_current['end'][j]
+            api_t = df_current['api_type'][j]
+            size_kb = df_current['size'][j]
+            df_all_api = df_all_api.append({'start': start_t, 'end': end_t, 
+                'api_type': api_t, 'stream_id': stream_id, 'size_kb': size_kb,
+                'status': 'sleep'},  ignore_index = True)
+    #-------------------------------
+    result = df_all_api.sort_values('start', ascending=1) # sort by start col
+
+    # add bandwidth column
+    result['bw'] = 0.0
+    # compute bandwidth
+    for index, row in result.iterrows():
+        if row.size_kb > 0.0:
+            bw = row.size_kb / (row.end - row.start)
+            result.loc[index, 'bw']  = bw
+
+    return result
 
 
 #------------------------------------------------------------------------------
