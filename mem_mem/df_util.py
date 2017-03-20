@@ -127,7 +127,8 @@ def DoneApiUpdate(df_all_api):
     done_streams = df_done.stream_id.unique() # np.array
 
     for x in done_streams:
-        df_curr = df_done.loc[df_done.stream_id == x]
-        print df_curr
+        df_curr = df_all.loc[df_all.stream_id == x] # the api in order
+        for index, row in df_curr.iterrows():
+            print index
 
     return df_all
