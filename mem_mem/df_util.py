@@ -152,7 +152,7 @@ def DoneApiUpdate(df_all_api):
             cur_pred_end = row.pred_end
             cur_status = row.status
 
-            print('count {} : cur_start {}  prev_end {}'.format(count, cur_start, prev_end)) 
+            #print('count {} : cur_start {}  prev_end {}'.format(count, cur_start, prev_end)) 
 
             if cur_status == 'done':
                 pass # do nothing 
