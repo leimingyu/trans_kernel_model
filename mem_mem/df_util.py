@@ -41,3 +41,35 @@ def UpdateTranTime(df_all, row_list, ways = 1.0):
                 cur_pred_time_left + df_all_api.iloc[i]['current_pos'] )
     
     return df_all_api
+
+
+#------------------------------------------------------------------------------
+# Get the time range to check concurrency 
+#------------------------------------------------------------------------------
+def GetRangeFromWakeStream(df_all_api):
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    startT = df_wake.current_pos.min()
+    endT = df_wake.pred_end.min()
+    return [startT, endT]
+
+
+#------------------------------------------------------------------------------
+# Check whether there is other stream for overlapping 
+#------------------------------------------------------------------------------
+def CheckOtherStream(df_all_api, time_interv):
+    """
+    
+    """
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    df_sleep = df_all_api.loc[df_all_api.status <> 'wake']
+    
+    new_stream_ls = []
+    for x in df_sleep.stream_id.unique():
+        if x not in df_wake.stream_id.unique():
+            new_stream_ls.append(x)
+    
+    newS = 0
+    if new_stream_ls:
+       newS = 1 
+
+    return newS
