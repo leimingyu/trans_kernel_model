@@ -128,7 +128,30 @@ def DoneApiUpdate(df_all_api):
 
     for x in done_streams:
         df_curr = df_all.loc[df_all.stream_id == x] # the api in order
+
+        count = 0
         for index, row in df_curr.iterrows():
-            print index
+            # record previous timing and status
+            if count == 0:
+                prev_start = row.start
+                prev_end = row.end
+                prev_pred_end = row.pred_end
+                prev_status = row.status
+
+            cur_start = row.start 
+            cur_end = row.end
+            cur_pred_end = row.pred_end
+            cur_status = row.status
+
+            if cur_status == 'done':
+                continue
+            else:
+                # adjust offset according to the previous predicted_end
+                ovhd = cur_start - prev_end
+                new_start = prev_pred_end + ovhd
+                new_end = cur_end + ovhd
+                # update the dataframe record
+                print index
+
 
     return df_all
