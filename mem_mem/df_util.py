@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import operator
 import sys
+from math import *
 
 
 #------------------------------------------------------------------------------
@@ -57,9 +58,6 @@ def GetRangeFromWakeStream(df_all_api):
 # Check whether there is other stream for overlapping 
 #------------------------------------------------------------------------------
 def CheckOtherStream(df_all_api, time_interv):
-    """
-    
-    """
     df_wake = df_all_api.loc[df_all_api.status == 'wake']
     df_sleep = df_all_api.loc[df_all_api.status <> 'wake']
     
@@ -73,3 +71,40 @@ def CheckOtherStream(df_all_api, time_interv):
        newS = 1 
 
     return newS
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def UpdateWakeTiming(df_all, time_interv, cc):
+    startT = time_interv[0]
+    endT = time_interv[1]
+    dur = endT - startT
+
+    df_all_api = df_all.copy(deep=True)
+    # since the df_all_api are sorted by start
+    # we only need to check the wake stream and start from top
+    for index, row in df_all_api.iterrows():
+        if row.status == 'wake':
+            bw = row.bw / cc
+            bytes_tran = dur * bw 
+            bytes_left = row.bytes_left - bytes_tran
+
+            done = 0
+            if abs(bytes_left - 0.0) <  1e-3: #  smaller than 1 byte
+                done = 1
+
+            #print index
+
+            if done == 1:
+                # update bytes_done
+                tot_size = row.size_kb
+                #print tot_size
+                df_all_api.set_value(index,'bytes_done', tot_size)
+                df_all_api.set_value(index,'bytes_left', 0)
+                df_all_api.set_value(index,'time_left', 0) # no time_left
+                df_all_api.set_value(index,'current_pos', row.pred_end)
+                df_all_api.set_value(index,'status', 'done')
+
+                
+
+    return df_all_api 
