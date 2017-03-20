@@ -55,17 +55,20 @@ def init_sort_api(df_cke_list):
 
 #------------------------------------------------------------------------------
 # Find out when to start current stream.
-# Read the prevous stream trace, when current h2d exceeds the threshold timing,
+# Read the prevous stream trace, 1) when current h2d exceeds the threshold timing,
 # record the current start time, and add the threshold
+# 2) if not, the current will start from the last h2d end time for previous one
 #------------------------------------------------------------------------------
 def find_h2d_start(df_trace, H2D_H2D_OVLP_TH):
     h2d_ovlp = 0
     h2d_starttime = 0
+    h2d_endtime = 0
 
     for index, row in df_trace.iterrows():
         if row.api_type == 'h2d':
             h2d_duation = row['duration']
             h2d_starttime = row['start']  # record the latest h2d
+            h2d_endtime = row['end']  # record the latest h2d
             if h2d_duation > H2D_H2D_OVLP_TH:
                 h2d_ovlp = 1
                 break
@@ -78,7 +81,8 @@ def find_h2d_start(df_trace, H2D_H2D_OVLP_TH):
     # if there is no overlapping for all h2d api,
     # the second stream will start from the last h2d ending time
     if h2d_ovlp == 0:
-        stream_start_time = h2d_starttime
+        #stream_start_time = h2d_starttime
+        stream_start_time = h2d_endtime
 
     # if there is overlapping, we add the overlapping starting time 
     # with the overlapping threshold
