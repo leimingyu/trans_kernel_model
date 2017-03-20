@@ -122,8 +122,9 @@ def UpdateWakeTiming(df_all, time_interv, cc):
 # 
 #------------------------------------------------------------------------------
 def DoneApiUpdate(df_all_api):
+    # copy the input
     df_all = df_all_api.copy(deep=True)
-    df_done = df_all.loc[df_all.status == 'done']
+    df_done = df_all.loc[df_all.status == 'done'] # find out which api is done
     done_streams = df_done.stream_id.unique() # np.array
 
     for x in done_streams:
@@ -150,8 +151,15 @@ def DoneApiUpdate(df_all_api):
                 ovhd = cur_start - prev_end
                 new_start = prev_pred_end + ovhd
                 new_end = cur_end + ovhd
-                # update the dataframe record
-                print index
+                # before updating the current record, save the current 
+                prev_start = cur_start
+                prev_end = cur_end
+                prev_pred_end = cur_pred_end
+                prev_status = cur_status
 
+                # update the dataframe record
+                #print index
+                df_all.set_value(index, 'start', new_start)
+                df_all.set_value(index, 'end', new_end)
 
     return df_all
