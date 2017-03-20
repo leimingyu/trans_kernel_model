@@ -4,56 +4,6 @@ import numpy as np
 from avgblkmodel import *
 
 #------------------------------------------------------------------------------
-# Deep copy the timing trace
-# for multiple cuda stream case, each trace will be appended to a list
-#------------------------------------------------------------------------------
-def init_trace_list(df_trace, stream_num = 1):
-    df_cke_list = []
-
-    for x in range(stream_num):
-        df_dup = df_trace.copy(deep=True)
-        df_dup.stream = x # update the stream id
-        df_cke_list.append(df_dup)
-
-    return df_cke_list
-
-
-#------------------------------------------------------------------------------
-# Sort api at the 1st time.
-# Return the sorted dataframe from the df_cke_list 
-#------------------------------------------------------------------------------
-def init_sort_api(df_cke_list):
-    columns_ = ['start', 'end', 'api_type', 'size_kb', 'stream_id', 'status']
-    df_all_api = pd.DataFrame(columns=columns_) # init
-    stream_num = len(df_cke_list)
-    #-------------------------------
-    for i in range(stream_num): # read each stream
-        stream_id = i
-        df_current = df_cke_list[i]
-        rows = df_current.shape[0]
-        for j in range(rows): # read each row
-            start_t = df_current['start'][j]
-            end_t = df_current['end'][j]
-            api_t = df_current['api_type'][j]
-            size_kb = df_current['size'][j]
-            df_all_api = df_all_api.append({'start': start_t, 'end': end_t, 
-                'api_type': api_t, 'stream_id': stream_id, 'size_kb': size_kb,
-                'status': 'sleep'},  ignore_index = True)
-    #-------------------------------
-    result = df_all_api.sort_values('start', ascending=1) # sort by start col
-
-    # add bandwidth column
-    result['bw'] = 0.0
-    # compute bandwidth
-    for index, row in result.iterrows():
-        if row.size_kb > 0.0:
-            bw = row.size_kb / (row.end - row.start)
-            result.loc[index, 'bw']  = bw
-
-    return result
-
-
-#------------------------------------------------------------------------------
 # Find out when to start current stream.
 # Read the prevous stream trace, 1) when current h2d exceeds the threshold timing,
 # record the current start time, and add the threshold
@@ -90,6 +40,78 @@ def find_h2d_start(df_trace, H2D_H2D_OVLP_TH):
         stream_start_time = h2d_starttime + H2D_H2D_OVLP_TH
 
     return stream_start_time
+
+
+#------------------------------------------------------------------------------
+# Deep copy the timing trace
+# for multiple cuda stream case, each trace will be appended to a list
+#------------------------------------------------------------------------------
+def init_trace_list(df_trace, stream_num = 1, h2d_ovlp_th = 3.158431):
+    df_cke_list = []
+
+    for x in range(stream_num):
+        df_dup = df_trace.copy(deep=True)
+        df_dup.stream = x # update the stream id
+        df_cke_list.append(df_dup)
+
+    #--------------------
+    # set up the trace table by the starting timing
+    #--------------------
+    for i in range(1,stream_num):
+        # compute the time for the previous data transfer
+        stream_startTime = find_h2d_start(df_cke_list[i-1], h2d_ovlp_th)
+        #print('stream_startTime : {}'.format(stream_startTime))
+        df_cke_list[i].start += stream_startTime
+        df_cke_list[i].end   += stream_startTime
+
+    return df_cke_list
+
+
+#------------------------------------------------------------------------------
+# Sort api at the 1st time.
+# Return the sorted dataframe from the df_cke_list 
+#------------------------------------------------------------------------------
+def init_sort_api_with_extra_cols(df_cke_list):
+    columns_ = ['start', 'end', 'api_type', 'size_kb', 'stream_id', 'status']
+    df_all_api = pd.DataFrame(columns=columns_) # init
+    stream_num = len(df_cke_list)
+    #-------------------------------
+    for i in range(stream_num): # read each stream
+        stream_id = i
+        df_current = df_cke_list[i]
+        rows = df_current.shape[0]
+        for j in range(rows): # read each row
+            start_t = df_current['start'][j]
+            end_t = df_current['end'][j]
+            api_t = df_current['api_type'][j]
+            size_kb = df_current['size'][j]
+            df_all_api = df_all_api.append({'start': start_t, 'end': end_t, 
+                'api_type': api_t, 'stream_id': stream_id, 'size_kb': size_kb,
+                'status': 'sleep'},  ignore_index = True)
+    #-------------------------------
+    result = df_all_api.sort_values('start', ascending=1) # sort by start col
+
+    # add bandwidth column
+    result['bw'] = 0.0
+    # compute bandwidth
+    for index, row in result.iterrows():
+        if row.size_kb > 0.0:
+            bw = row.size_kb / (row.end - row.start)
+            result.loc[index, 'bw']  = bw
+
+
+    #-------------------------------
+    # add extra columns
+    #-------------------------------
+    result['bytes_done'] = 0.0
+    result['bytes_left'] = result['size_kb']
+    result['current_pos'] = 0.0
+    result['time_left'] = 0.0
+    result['pred_end'] = 0.0
+
+    return result
+
+
 
 
 #---------------------------------------------
