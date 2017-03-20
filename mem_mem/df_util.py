@@ -86,6 +86,8 @@ def UpdateWakeTiming(df_all, time_interv, cc):
     for index, row in df_all_api.iterrows():
         if row.status == 'wake':
             bw = row.bw / cc
+            bytes_don = row.bytes_done
+            bytes_lft = row.bytes_left
             bytes_tran = dur * bw 
             bytes_left = row.bytes_left - bytes_tran
 
@@ -104,7 +106,28 @@ def UpdateWakeTiming(df_all, time_interv, cc):
                 df_all_api.set_value(index,'time_left', 0) # no time_left
                 df_all_api.set_value(index,'current_pos', row.pred_end)
                 df_all_api.set_value(index,'status', 'done')
-
+            else:
+                # deduct the bytes, update teh current pos
+                df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
+                df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
+                df_all_api.set_value(index,'current_pos', endT)
+                df_all_api.set_value(index,'time_left', 0) # clear
+                df_all_api.set_value(index,'pred_end', 0) # clear
                 
 
     return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def DoneApiUpdate(df_all_api):
+    df_all = df_all_api.copy(deep=True)
+    df_done = df_all.loc[df_all.status == 'done']
+    done_streams = df_done.stream_id.unique() # np.array
+
+    for x in done_streams:
+        df_curr = df_done.loc[df_done.stream_id == x]
+        print df_curr
+
+    return df_all
