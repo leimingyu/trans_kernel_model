@@ -134,11 +134,13 @@ def check_cc(df_all_api, first, second):
     r1 = first
     r2 = second 
 
-    curapi_start = df_all_api.iloc[r1]['start']
-    curapi_end = df_all_api.iloc[r1]['end']
+    curapi_start = df_all_api.loc[r1]['start']
+    curapi_end = df_all_api.loc[r1]['end']
 
-    nextapi_start = df_all_api.iloc[r2]['start']
-    nextapi_end = df_all_api.iloc[r2]['end']
+    nextapi_start = df_all_api.loc[r2]['start']
+    nextapi_end = df_all_api.loc[r2]['end']
+
+    print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
 
     cc = 0
     if curapi_start <= nextapi_start < curapi_end:
