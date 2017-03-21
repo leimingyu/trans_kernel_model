@@ -150,6 +150,7 @@ def check_cc(df_all_api, first, second):
 # Find the concurrency starting pos and update the  
 #------------------------------------------------------------------------------
 def update_before_conc(df_all, r1, r2):
+    #print('{} {}'.format(r1, r2))
     df_all_api = df_all.copy(deep=True)
 
     curapi_start = df_all_api.iloc[r1]['start']
@@ -163,12 +164,17 @@ def update_before_conc(df_all, r1, r2):
     nextapi_stream = df_all_api.iloc[r2]['stream_id']
 
     no_ovlap_time = nextapi_start - curapi_start
+    #print('cur start {} next start {}'.format(curapi_start, nextapi_start))
+    #print no_ovlap_time
 
     # the call type for r1 is h2d or d2h
     if curapi in ['h2d', 'd2h'] :
+        #print curapi
         curr_trans = df_all_api.iloc[r1]['bw'] * no_ovlap_time
         curr_tot   = df_all_api.iloc[r1]['size_kb']
         curr_left  = curr_tot - curr_trans
+        #print curr_trans 
+        #print curr_left
 
         # update the bytes_done
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done',  curr_trans)
