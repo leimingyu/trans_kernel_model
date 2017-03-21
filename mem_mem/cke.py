@@ -221,6 +221,16 @@ def Predict_end(df_all, row_list, ways = 1.0):
     return df_all_api
 
 
+#------------------------------------------------------------------------------
+# get the time range from wake api, to check the next concurrent api 
+#------------------------------------------------------------------------------
+def Get_next_range(df_all):
+    df_all_api = df_all.copy(deep=True)
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    begT = df_wake.current_pos.min()
+    endT = df_wake.pred_end.min()
+    return [begT, endT]
+
 #---------------------------------------------
 # model cke function
 #---------------------------------------------
