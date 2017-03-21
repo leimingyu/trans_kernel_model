@@ -143,9 +143,9 @@ def check_cc(df_all_api, first, second):
 
     #print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
 
-    cc = 0
+    cc = False 
     if curapi_start <= nextapi_start < curapi_end:
-        cc = 1
+        cc = True 
     return cc
 
 
