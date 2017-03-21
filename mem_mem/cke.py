@@ -184,6 +184,9 @@ def update_before_conc(df_all, r1, r2):
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_left',  curr_left)
         df_all_api = UpdateCell(df_all_api, r1, 'current_pos', nextapi_start)
 
+    # update the current_pos for r2
+    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', nextapi_start)
+
     return df_all_api
 
 
