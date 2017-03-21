@@ -190,6 +190,37 @@ def update_before_conc(df_all, r1, r2):
     return df_all_api
 
 
+#------------------------------------------------------------------------------
+# Predict the ending time: based on the concurrency
+#------------------------------------------------------------------------------
+def Predict_end(df_all, row_list, ways = 1.0):
+    """
+    From the input dataframe, adjust the row info, depending on the concurrency.
+    """
+    df_all_api = df_all.copy(deep=True)
+
+    cc = ways # concurrency
+
+    for i in row_list:
+        # the bandwidth is shared among all the concurrent transfer
+        bw = df_all_api.loc[i]['bw'] / cc
+
+        # predict the transfer time based on the bandwidth
+        cur_pred_time_left = df_all_api.loc[i]['bytes_left'] / bw
+
+        #print('bw : {}'.format(df_all_api.loc[i]['bw']))
+        #print('bytes_left : {}'.format(df_all_api.loc[i]['bytes_left']))
+
+        # update the cell: time_left 
+        #df_all_api = UpdateCell(df_all_api, i, 'time_left', cur_pred_time_left)
+
+        # update the future ending time
+        df_all_api = UpdateCell(df_all_api, i, 'pred_end', 
+                cur_pred_time_left + df_all_api.loc[i]['current_pos'] )
+    
+    return df_all_api
+
+
 #---------------------------------------------
 # model cke function
 #---------------------------------------------
