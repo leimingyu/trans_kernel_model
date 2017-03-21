@@ -150,6 +150,37 @@ def check_cc(df_all_api, first, second):
 
 
 #------------------------------------------------------------------------------
+# check concurrency by another cuda stream within a time range 
+#------------------------------------------------------------------------------
+def check_cc_by_time(df_all, time_range):
+    df_all_api = df_all.copy(deep=True)
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
+
+    # find out the stream ids in df_wake
+    new_stream_ls = []
+    for x in df_sleep.stream_id.unique():
+        if x not in df_wake.stream_id.unique():
+            new_stream_ls.append(x)
+    
+    has_conc_stream = 1 if new_stream_ls else 0;
+    #print('has_conc_stream {}'.format(has_conc_stream))
+
+    # todo:
+    # look for streams that start within the time range
+    extra_cc = 0
+    if has_conc_stream == 1:
+        for sid in new_stream_ls:
+            df_cur = df_sleep.loc[df_sleep.stream_id == sid]
+            for index, row in df_cur.iterrows():
+                startT = row.start
+                if time_range[0] <= startT < time_range[1]: # api in the range
+                    extra_cc = 1
+
+    return extra_cc 
+
+
+#------------------------------------------------------------------------------
 # Find the concurrency starting pos and update the  
 #------------------------------------------------------------------------------
 def update_before_conc(df_all, r1, r2):
@@ -204,10 +235,8 @@ def Predict_end(df_all, row_list, ways = 1.0):
     for i in row_list:
         # the bandwidth is shared among all the concurrent transfer
         bw = df_all_api.loc[i]['bw'] / cc
-
         # predict the transfer time based on the bandwidth
         cur_pred_time_left = df_all_api.loc[i]['bytes_left'] / bw
-
         #print('bw : {}'.format(df_all_api.loc[i]['bw']))
         #print('bytes_left : {}'.format(df_all_api.loc[i]['bytes_left']))
 
@@ -220,6 +249,122 @@ def Predict_end(df_all, row_list, ways = 1.0):
     
     return df_all_api
 
+
+#------------------------------------------------------------------------------
+# Update the ending time: based on the concurrency
+#------------------------------------------------------------------------------
+def Update_with_pred_end(df_all, row_list, ways = 1.0):
+    startT = row_list[0]
+    endT = row_list[1]
+    dur = endT - startT
+
+    cc = ways
+
+    df_all_api = df_all.copy(deep=True)
+
+    # since the df_all_api are sorted by start
+    # we only need to check the wake stream and start from top
+    for index, row in df_all_api.iterrows():
+        if row.status == 'wake':
+            bw = row.bw / cc
+            bytes_don = row.bytes_done
+            bytes_lft = row.bytes_left
+            bytes_tran = dur * bw 
+            bytes_left = row.bytes_left - bytes_tran
+
+            done = 0
+            if abs(bytes_left - 0.0) <  1e-3: #  smaller than 1 byte
+                done = 1
+
+            #print index
+
+            if done == 1:
+                # update bytes_done
+                tot_size = row.size_kb
+                #print tot_size
+                df_all_api.set_value(index,'bytes_done', tot_size)
+                df_all_api.set_value(index,'bytes_left', 0)
+                df_all_api.set_value(index,'time_left', 0) # no time_left
+                df_all_api.set_value(index,'current_pos', row.pred_end)
+                df_all_api.set_value(index,'status', 'done')
+            else:
+                # deduct the bytes, update teh current pos
+                df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
+                df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
+                df_all_api.set_value(index,'current_pos', endT)
+                df_all_api.set_value(index,'time_left', 0) # clear
+                df_all_api.set_value(index,'pred_end', 0) # clear
+
+    return df_all_api
+
+
+#------------------------------------------------------------------------------
+# For cuda calls with 'done' status, update the timing for that stream 
+#------------------------------------------------------------------------------
+def UpdateStreamTime(df_all_api):
+    # copy the input
+    df_all = df_all_api.copy(deep=True)
+    df_done = df_all.loc[df_all.status == 'done'] # find out which api is done
+    done_streams = df_done.stream_id.unique() # np.array
+
+    for x in done_streams:
+        df_curr = df_all.loc[df_all.stream_id == x] # the api in order
+
+        prev_start = 0.0
+        prev_end = 0.0
+        prev_pred_end = 0.0
+        prev_status = '' 
+        prev_newEnd = 0.0
+
+        count = 0
+        for index, row in df_curr.iterrows():
+            # record previous timing and status
+            if count == 0:
+                prev_start = row.start
+                prev_end = row.end
+                #print('prev_end {}'.format(prev_end))
+                prev_pred_end = row.pred_end
+                prev_status = row.status
+
+            cur_start = row.start 
+            #print('cur_start {}'.format(cur_start))
+            cur_end = row.end
+            cur_pred_end = row.pred_end
+            cur_status = row.status
+
+            #print('count {} : cur_start {}  prev_end {}'.format(count, cur_start, prev_end)) 
+
+            if cur_status == 'done':
+                pass # do nothing 
+            else:
+                # adjust offset according to the previous predicted_end
+                ovhd = cur_start - prev_end 
+                #print('count {} : ovhd {}'.format(count, ovhd)) 
+
+                if prev_status == 'done':
+                    new_start = prev_pred_end + ovhd    # offset with the pred_end
+                else:
+                    new_start = prev_newEnd + ovhd  # with previous new_end
+
+                new_end = new_start + (cur_end - cur_start)  # new start + duration
+
+                # before updating the current record, save the current 
+                prev_start = cur_start
+                prev_end = cur_end
+                prev_pred_end = cur_pred_end
+                prev_status = cur_status
+                prev_newEnd = new_end # important!
+
+                # update the dataframe record
+                #print index
+                df_all.set_value(index, 'start', new_start)
+                df_all.set_value(index, 'end', new_end)
+
+
+            # update the count for current iter
+            count = count + 1
+
+    return df_all
 
 #------------------------------------------------------------------------------
 # get the time range from wake api, to check the next concurrent api 
