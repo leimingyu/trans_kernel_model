@@ -2,6 +2,7 @@ from math import *
 import pandas as pd
 import numpy as np
 from avgblkmodel import *
+from df_util import *
 
 #------------------------------------------------------------------------------
 # Find out when to start current stream.
@@ -143,6 +144,38 @@ def check_cc(df_all_api, first, second):
     if curapi_start <= nextapi_start < curapi_end:
         cc = 1
     return cc
+
+
+#------------------------------------------------------------------------------
+# Find the concurrency starting pos and update the  
+#------------------------------------------------------------------------------
+def update_before_conc(df_all, r1, r2):
+    df_all_api = df_all.copy(deep=True)
+
+    curapi_start = df_all_api.iloc[r1]['start']
+    curapi_end = df_all_api.iloc[r1]['end']
+    curapi = df_all_api.iloc[r1]['api_type']
+    curapi_stream = df_all_api.iloc[r1]['stream_id']
+
+    nextapi_start = df_all_api.iloc[r2]['start']
+    nextapi_end = df_all_api.iloc[r2]['end']
+    nextapi = df_all_api.iloc[r2]['api_type']
+    nextapi_stream = df_all_api.iloc[r2]['stream_id']
+
+    no_ovlap_time = nextapi_start - curapi_start
+
+    # the call type for r1 is h2d or d2h
+    if curapi in ['h2d', 'd2h'] :
+        curr_trans = df_all_api.iloc[r1]['bw'] * no_ovlap_time
+        curr_tot   = df_all_api.iloc[r1]['size_kb']
+        curr_left  = curr_tot - curr_trans
+
+        # update the bytes_done
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done',  curr_trans)
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_left',  curr_left)
+        df_all_api = UpdateCell(df_all_api, r1, 'current_pos', nextapi_start)
+
+    return df_all_api
 
 
 #---------------------------------------------
