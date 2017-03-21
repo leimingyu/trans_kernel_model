@@ -55,7 +55,7 @@ def init_trace_list(df_trace, stream_num = 1, h2d_ovlp_th = 3.158431):
         df_cke_list.append(df_dup)
 
     #--------------------
-    # set up the trace table by the starting timing
+    # set up the trace table by adjusting the starting timing
     #--------------------
     for i in range(1,stream_num):
         # compute the time for the previous data transfer
@@ -112,6 +112,18 @@ def init_sort_api_with_extra_cols(df_cke_list):
     return result
 
 
+#------------------------------------------------------------------------------
+#  select the first sleep call 
+#------------------------------------------------------------------------------
+def pick_first_in_sleep(df_all_api):
+    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
+    count = 0
+    target_rowid = 0
+    for index, row in df_sleep.iterrows():
+        if count == 0: # 1st row
+            target_rowid = index
+            break
+    return target_rowid 
 
 
 #---------------------------------------------
