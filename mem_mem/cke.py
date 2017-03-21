@@ -124,6 +124,7 @@ def pick_first_in_sleep(df_all_api):
         if count == 0: # 1st row
             target_rowid = index
             break
+    target_rowid = int(target_rowid)
     return target_rowid 
 
 
@@ -140,7 +141,7 @@ def check_cc(df_all_api, first, second):
     nextapi_start = df_all_api.loc[r2]['start']
     nextapi_end = df_all_api.loc[r2]['end']
 
-    print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
+    #print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
 
     cc = 0
     if curapi_start <= nextapi_start < curapi_end:
@@ -155,15 +156,15 @@ def update_before_conc(df_all, r1, r2):
     #print('{} {}'.format(r1, r2))
     df_all_api = df_all.copy(deep=True)
 
-    curapi_start = df_all_api.iloc[r1]['start']
-    curapi_end = df_all_api.iloc[r1]['end']
-    curapi = df_all_api.iloc[r1]['api_type']
-    curapi_stream = df_all_api.iloc[r1]['stream_id']
+    curapi_start = df_all_api.loc[r1]['start']
+    curapi_end = df_all_api.loc[r1]['end']
+    curapi = df_all_api.loc[r1]['api_type']
+    curapi_stream = df_all_api.loc[r1]['stream_id']
 
-    nextapi_start = df_all_api.iloc[r2]['start']
-    nextapi_end = df_all_api.iloc[r2]['end']
-    nextapi = df_all_api.iloc[r2]['api_type']
-    nextapi_stream = df_all_api.iloc[r2]['stream_id']
+    nextapi_start = df_all_api.loc[r2]['start']
+    nextapi_end = df_all_api.loc[r2]['end']
+    nextapi = df_all_api.loc[r2]['api_type']
+    nextapi_stream = df_all_api.loc[r2]['stream_id']
 
     no_ovlap_time = nextapi_start - curapi_start
     #print('cur start {} next start {}'.format(curapi_start, nextapi_start))
@@ -172,8 +173,8 @@ def update_before_conc(df_all, r1, r2):
     # the call type for r1 is h2d or d2h
     if curapi in ['h2d', 'd2h'] :
         #print curapi
-        curr_trans = df_all_api.iloc[r1]['bw'] * no_ovlap_time
-        curr_tot   = df_all_api.iloc[r1]['size_kb']
+        curr_trans = df_all_api.loc[r1]['bw'] * no_ovlap_time
+        curr_tot   = df_all_api.loc[r1]['size_kb']
         curr_left  = curr_tot - curr_trans
         #print curr_trans 
         #print curr_left
