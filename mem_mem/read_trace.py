@@ -496,9 +496,9 @@ def getTotalRuntime(df_trace_new):
         return float(df_trace_new.end.max()) - float(df_trace_new.start.min())
 
 
-# -------------------------
+# -----------------------------------------------------------------------------
 # Reset the start time to zero for the input dataframe trace.
-# -------------------------
+# -----------------------------------------------------------------------------
 def reset_starting(df_org):
     df_trace = df_org.copy(deep=True)
     offset = df_trace.start[0]
@@ -506,8 +506,6 @@ def reset_starting(df_org):
     df_trace.start = df_trace.start - offset
     df_trace.end = df_trace.end - offset
     return df_trace
-
-
 
 
 def find_h2ds_timing(df_trace):
