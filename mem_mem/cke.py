@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from avgblkmodel import *
 from df_util import *
+import sys
 
 #------------------------------------------------------------------------------
 # Find out when to start current stream.
@@ -385,6 +386,47 @@ def Get_next_range(df_all):
     begT = df_wake.current_pos.min()
     endT = df_wake.pred_end.min()
     return [begT, endT]
+
+
+#------------------------------------------------------------------------------
+# start next api 
+#------------------------------------------------------------------------------
+def StartNext(df_all, row_list):
+    df_all_api = df_all.copy(deep=True)
+    # row r1 and r2 should be wake
+    r1 = row_list[0]
+    r2 = row_list[1]
+
+    cur_pos = df_all_api.loc[r1]['current_pos']
+    cur_bw = df_all_api.loc[r1]['bw']
+    cur_bytesdone = df_all_api.loc[r1]['bytes_done']
+    cur_kb = df_all_api.loc[r1]['size_kb']
+
+    next_start = df_all_api.loc[r2]['start']
+
+    dur = next_start - cur_pos
+    bytes_tran = dur * cur_bw
+    
+    cur_bytes_left = df_all_api.loc[r1]['bytes_left']
+    if cur_bytes_left < 1e-3:
+        sys.stderr.write('no bytes left')
+
+    cur_left_new = cur_bytes_left - bytes_tran
+    if cur_left_new < 1e-3:
+        cur_left_new = 0.0
+
+    cur_bytesdone_new = cur_bytesdone + bytes_tran
+
+    # update r1 status
+    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', next_start) # use coming start time
+    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', cur_left_new)
+    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', cur_bytesdone_new)
+    if cur_left_new == 0.0:
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', cur_kb)
+        df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
+
+    return df_all_api 
+
 
 #---------------------------------------------
 # model cke function
