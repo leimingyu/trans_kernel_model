@@ -3,7 +3,8 @@ from math import *
 #import numpy as np
 
 class DeviceInfo():
-    def __init__(self, sm_num=0, sharedmem_per_sm=0, reg_per_sm=0, maxthreads_per_sm=0):
+    def __init__(self, sm_num=0, sharedmem_per_sm=0, reg_per_sm=0, 
+            maxthreads_per_sm=0):
         self.sm_num = sm_num
         self.sharedmem_per_sm = sharedmem_per_sm # bytes
         self.reg_per_sm = reg_per_sm
@@ -11,7 +12,8 @@ class DeviceInfo():
 
 
 class KernelInfo():
-    def __init__(self, blockDim=0, gridDim=0, reg_per_thread=0, sharedmem_per_blk=0, runtime_ms = 0, avg_blk_time = 0):
+    def __init__(self, blockDim=0, gridDim=0, reg_per_thread=0, 
+            sharedmem_per_blk=0, runtime_ms = 0, avg_blk_time = 0):
         self.blockDim = blockDim
         self.gridDim = gridDim
         self.reg_per_thread = reg_per_thread
