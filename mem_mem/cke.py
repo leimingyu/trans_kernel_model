@@ -441,6 +441,66 @@ def StartNext(df_all, row_list):
     return df_all_api 
 
 
+#------------------------------------------------------------------------------
+# start next api 
+#------------------------------------------------------------------------------
+def StartNext_checktype(df_all, row_list):
+    df_all_api = df_all.copy(deep=True)
+    # row r1 and r2 should be wake
+    r1 = row_list[0]
+    r2 = row_list[1]
+
+    #----------------
+    # row r1
+    #----------------
+    r1_type = df_all_api.loc[r1]['api_type']
+    r1_cur_pos = df_all_api.loc[r1]['current_pos']
+    r1_left_new = 0.0
+    r1_bytesdone_new = 0.0
+    r1_kb = 0.0
+
+    # if r1 type is transfer call, we need to update the transfer status
+    if r1_type in ['h2d', 'd2h']:
+        r1_bw = df_all_api.loc[r1]['bw']
+        r1_bytesdone = df_all_api.loc[r1]['bytes_done']
+        r1_kb = df_all_api.loc[r1]['size_kb']
+        # compute trans size
+        duration = df_all_api.loc[r2]['start'] - r1_cur_pos
+        r1_bytes_tran = duration * r1_bw
+        # check bytes left
+        r1_bytes_left = df_all_api.loc[r1]['bytes_left']
+        if r1_bytes_left < 1e-3:
+            sys.stderr.write('no bytes left')
+        # calculate how many bytes left
+        r1_left_new = r1_bytes_left - r1_bytes_tran
+        if r1_left_new < 1e-3:
+            r1_left_new = 0.0
+        # compute bytes done so far
+        r1_bytesdone_new = r1_bytesdone + r1_bytes_tran
+
+    #----------------
+    # row r2
+    #----------------
+    #r2_type = df_all_api.loc[r2]['api_type']
+    r2_start = df_all_api.loc[r2]['start']
+    #if r2_type in ['h2d', 'd2h']: # for transfer api, we update the bytes info
+
+
+    # update r1 status
+    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
+    if r1_type in ['h2d', 'd2h']:
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
+        if r1_left_new == 0.0:
+            df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
+            df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
+
+    # update r2 status: current pos
+    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
+
+    return df_all_api 
+
+
 #---------------------------------------------
 # model cke function
 #---------------------------------------------
