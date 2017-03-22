@@ -308,7 +308,7 @@ def UpdateStreamTime(df_all_api):
     done_streams = df_done.stream_id.unique() # np.array
 
     for x in done_streams:
-        df_curr = df_all.loc[df_all.stream_id == x] # the api in order
+        df_cur = df_all.loc[df_all.stream_id == x] # the api in order
 
         prev_start = 0.0
         prev_end = 0.0
@@ -317,7 +317,7 @@ def UpdateStreamTime(df_all_api):
         prev_newEnd = 0.0
 
         count = 0
-        for index, row in df_curr.iterrows():
+        for index, row in df_cur.iterrows():
             # record previous timing and status
             if count == 0:
                 prev_start = row.start
@@ -363,6 +363,16 @@ def UpdateStreamTime(df_all_api):
 
             # update the count for current iter
             count = count + 1
+
+        # update the end column for rows with 'done' status
+        df_cur_done = df_cur.loc[df_cur.status == 'done']
+        for index, row in df_cur_done.iterrows():
+            df_all.set_value(index, 'end', row.pred_end) # update with pred_end
+
+        #----------------------
+        # end of current stream
+    #--------------------------------------
+    #end of all the streams with 'done' call
 
     return df_all
 
