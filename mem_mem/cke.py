@@ -343,7 +343,6 @@ def UpdateStreamTime(df_all_api):
             else:
                 # adjust offset according to the previous predicted_end
                 ovhd = cur_start - prev_end 
-                #print('count {} : ovhd {}'.format(count, ovhd)) 
 
                 if prev_status == 'done':
                     new_start = prev_pred_end + ovhd    # offset with the pred_end
@@ -600,7 +599,7 @@ def Predict_checkCC(df_all, first, second):
     r2_start = df_all_api.loc[r2]['start']
 
     conc = 0
-    if r1_cur_pos == r2_start:
+    if r1_cur_pos == r2_start:  # when the two api start at the same time
         conc = 1
 
     # when there is overlapping
