@@ -150,6 +150,9 @@ def check_cc(df_all_api, first, second):
     return cc
 
 
+
+
+
 #------------------------------------------------------------------------------
 # check concurrency by another cuda stream within a time range 
 #------------------------------------------------------------------------------
@@ -381,8 +384,9 @@ def UpdateStreamTime(df_all_api):
 # get the time range from wake api, to check the next concurrent api 
 #------------------------------------------------------------------------------
 def Get_next_range(df_all):
-    df_all_api = df_all.copy(deep=True)
-    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    #df_all_api = df_all.copy(deep=True)
+    #df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    df_wake = df_all.loc[df_all.status == 'wake']
     begT = df_wake.current_pos.min()
     endT = df_wake.pred_end.min()
     return [begT, endT]
@@ -424,6 +428,9 @@ def StartNext(df_all, row_list):
     if cur_left_new == 0.0:
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', cur_kb)
         df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
+
+    # update r2 status
+    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', next_start)
 
     return df_all_api 
 
@@ -579,3 +586,27 @@ def model_cke_from_same_kernel(Gpu, kernels):
 #---------------------------------------------
 # end of model cke function for the same kernel
 #---------------------------------------------
+
+#------------------------------------------------------------------------------
+# check concurrency using current_pos
+#------------------------------------------------------------------------------
+def Predict_checkCC(df_all, first, second):
+    df_all_api = df_all.copy(deep=True)
+    r1 = first
+    r2 = second 
+    
+    # if r1 current_pos == r2 start, there is overlapping
+    r1_cur_pos = df_all_api.loc[r1]['current_pos']
+    r2_start = df_all_api.loc[r2]['start']
+
+    conc = 0
+    if r1_cur_pos == r2_start:
+        conc = 1
+
+    # when there is overlapping
+    if conc == 1:
+        cc = 2.0
+        # predcit the next 
+        df_all_api = Predict_end(df_all_api, [r1, r2], ways = cc)
+
+    return df_all_api 
