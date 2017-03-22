@@ -312,6 +312,7 @@ def UpdateStreamTime(df_all_api):
     done_streams = df_done.stream_id.unique() # np.array
 
     for x in done_streams:
+        # read the stream
         df_cur = df_all.loc[df_all.stream_id == x] # the api in order
 
         prev_start = 0.0
@@ -321,7 +322,7 @@ def UpdateStreamTime(df_all_api):
         prev_newEnd = 0.0
 
         count = 0
-        for index, row in df_cur.iterrows():
+        for index, row in df_cur.iterrows(): # process each row
             # record previous timing and status
             if count == 0:
                 prev_start = row.start
@@ -330,6 +331,7 @@ def UpdateStreamTime(df_all_api):
                 prev_pred_end = row.pred_end
                 prev_status = row.status
 
+            # read current stat
             cur_start = row.start 
             #print('cur_start {}'.format(cur_start))
             cur_end = row.end
@@ -339,10 +341,15 @@ def UpdateStreamTime(df_all_api):
             #print('count {} : cur_start {}  prev_end {}'.format(count, cur_start, prev_end)) 
 
             if cur_status == 'done':
-                pass # do nothing 
+                # if it is done, no need to update, save it for coming row
+                prev_start = row.start
+                prev_end = row.end
+                prev_pred_end = row.pred_end
+                prev_status = row.status
             else:
                 # adjust offset according to the previous predicted_end
                 ovhd = cur_start - prev_end 
+                #print('stream {} : cur_start {}'.format(x, cur_start))
 
                 if prev_status == 'done':
                     new_start = prev_pred_end + ovhd    # offset with the pred_end
@@ -400,36 +407,36 @@ def StartNext(df_all, row_list):
     r1 = row_list[0]
     r2 = row_list[1]
 
-    cur_pos = df_all_api.loc[r1]['current_pos']
-    cur_bw = df_all_api.loc[r1]['bw']
-    cur_bytesdone = df_all_api.loc[r1]['bytes_done']
-    cur_kb = df_all_api.loc[r1]['size_kb']
+    r1_cur_pos = df_all_api.loc[r1]['current_pos']
+    r1_bw = df_all_api.loc[r1]['bw']
+    r1_bytesdone = df_all_api.loc[r1]['bytes_done']
+    r1_kb = df_all_api.loc[r1]['size_kb']
 
-    next_start = df_all_api.loc[r2]['start']
+    r2_start = df_all_api.loc[r2]['start']
 
-    dur = next_start - cur_pos
-    bytes_tran = dur * cur_bw
+    dur = r2_start - r1_cur_pos
+    bytes_tran = dur * r1_bw
     
-    cur_bytes_left = df_all_api.loc[r1]['bytes_left']
-    if cur_bytes_left < 1e-3:
+    r1_bytes_left = df_all_api.loc[r1]['bytes_left']
+    if r1_bytes_left < 1e-3:
         sys.stderr.write('no bytes left')
 
-    cur_left_new = cur_bytes_left - bytes_tran
-    if cur_left_new < 1e-3:
-        cur_left_new = 0.0
+    r1_left_new = r1_bytes_left - bytes_tran
+    if r1_left_new < 1e-3:
+        r1_left_new = 0.0
 
-    cur_bytesdone_new = cur_bytesdone + bytes_tran
+    r1_bytesdone_new = r1_bytesdone + bytes_tran
 
     # update r1 status
-    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', next_start) # use coming start time
-    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', cur_left_new)
-    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', cur_bytesdone_new)
-    if cur_left_new == 0.0:
-        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', cur_kb)
+    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
+    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
+    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
+    if r1_left_new == 0.0:
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
         df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
 
     # update r2 status
-    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', next_start)
+    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
 
     return df_all_api 
 
