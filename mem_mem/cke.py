@@ -119,14 +119,18 @@ def init_sort_api_with_extra_cols(df_cke_list):
 #------------------------------------------------------------------------------
 def pick_first_in_sleep(df_all_api):
     df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
-    count = 0
-    target_rowid = 0
-    for index, row in df_sleep.iterrows():
-        if count == 0: # 1st row
-            target_rowid = index
-            break
-    target_rowid = int(target_rowid)
-    return target_rowid 
+
+    if df_sleep.shape[0] == 0:
+        return None
+    else:
+        count = 0
+        target_rowid = 0
+        for index, row in df_sleep.iterrows():
+            if count == 0: # 1st row
+                target_rowid = index
+                break
+        target_rowid = int(target_rowid)
+        return target_rowid 
 
 
 #------------------------------------------------------------------------------
@@ -787,28 +791,66 @@ def Update_wake_noConflict(df_all, timeRange):
 #------------------------------------------------------------------------------
 # Predict the end time when there is memory transfer overlapping. 
 #------------------------------------------------------------------------------
-def Predict_transferOvlp(df_all, first, second):
+def Predict_transferOvlp(df_all, first, second, ways = 1.0):
     df_all_api = df_all.copy(deep=True)
 
-#    target_rows = [first, second]
-#
-#    for r1 in target_rows:  # work on the target row 
-#        r1_type = df_all_api.loc[r1]['api_type']
-#        cur_pos = df_all_api.loc[r1]['current_pos']
-#
-#        # update the predicted end time based on the api type
-#        if r1_type in ['h2d', 'd2h']:
-#            # check the bytes left and use bw to predict the end time
-#            bw = df_all_api.loc[r1]['bw']
-#            bytesleft = df_all_api.loc[r1]['bytes_left']
-#            pred_time_left = bytesleft / bw
-#            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
-#        elif r1_type == 'kern':
-#            # no overlapping, no change to kernel time: curpos + kernel_runtime
-#            kernel_time = df_all_api.loc[r1]['end'] - df_all_api.loc[r1]['start']
-#            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', kernel_time + cur_pos)
-#        else:
-#            sys.stderr.write('Unknown API call.')
-#
+    target_rows = [first, second]
+
+    cc = ways
+
+    for r1 in target_rows:  # work on the target row 
+        r1_type = df_all_api.loc[r1]['api_type']
+        cur_pos = df_all_api.loc[r1]['current_pos']
+
+        # check the bytes left and use bw to predict the end time
+        bw = df_all_api.loc[r1]['bw'] / cc
+        bytesleft = df_all_api.loc[r1]['bytes_left']
+        pred_time_left = bytesleft / bw
+        df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
+
+    return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# Update using pred_end when there is no conflict. 
+#------------------------------------------------------------------------------
+def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
+    df_all_api = df_all.copy(deep=True)
+    df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
+
+    startT = timeRange[0]
+    endT = timeRange[1]
+    dur = endT - startT
+
+    cc = ways
+
+    # iterate through each row to update the pred_end
+    for index, row in df_wake.iterrows():
+        bw = row.bw / cc
+        bytes_tran = dur * bw 
+        bytes_don = row.bytes_done
+        bytes_lft = row.bytes_left
+        bytes_left = row.bytes_left - bytes_tran
+
+        done = 0
+        if abs(bytes_left - 0.0) <  1e-3: #  smaller than 1 byte
+            done = 1
+
+        if done == 1:
+            # update bytes_done
+            tot_size = row.size_kb
+            #print tot_size
+            df_all_api.set_value(index,'bytes_done', tot_size)
+            df_all_api.set_value(index,'bytes_left', 0)
+            df_all_api.set_value(index,'time_left', 0) # no time_left
+            df_all_api.set_value(index,'current_pos', row.pred_end)
+            df_all_api.set_value(index,'status', 'done')
+        else:
+            # deduct the bytes, update teh current pos
+            df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
+            df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
+            df_all_api.set_value(index,'current_pos', endT)
+            df_all_api.set_value(index,'time_left', 0) # clear
+            df_all_api.set_value(index,'pred_end', 0) # clear
 
     return df_all_api 
