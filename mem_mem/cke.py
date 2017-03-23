@@ -854,3 +854,31 @@ def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
             df_all_api.set_value(index,'pred_end', 0) # clear
 
     return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# For the last api call, update the entire trace table. 
+#------------------------------------------------------------------------------
+def UpdateStream_lastapi(df_all_api):
+    # copy the input
+    df_all = df_all_api.copy(deep=True)
+    df_lastwake = df_all.loc[df_all.status == 'wake'] # find out the last active api 
+
+    for index, row in df_lastwake.iterrows():
+        apitype = row.api_type
+        if apitype in ['h2d', 'd2h']: # there is no overlapping since the last one
+            bw = row.bw
+            cur_pos = row.current_pos
+            bytes_left = row.bytes_left # bytes left to transfer
+            time_to_finish= bytes_left / bw
+            pred_end = cur_pos + time_to_finish
+            # compute the new end : cur_pos + time_to_finish 
+            df_all.set_value(index, 'pred_end', pred_end)
+            df_all.set_value(index, 'bytes_left', 0)
+            df_all.set_value(index, 'bytes_done', row.size_kb)
+            df_all.set_value(index, 'time_left', 0)
+            df_all.set_value(index, 'status', 'done')
+            df_all.set_value(index, 'current_pos', pred_end) # current will be the pred_end
+            df_all.set_value(index, 'end', pred_end) # end will be the pred_end
+
+    return df_all
