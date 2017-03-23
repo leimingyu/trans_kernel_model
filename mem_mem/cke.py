@@ -443,9 +443,11 @@ def StartNext(df_all, row_list):
 
 #------------------------------------------------------------------------------
 # start next api 
+# todo: add cases for kernels
 #------------------------------------------------------------------------------
 def StartNext_checktype(df_all, row_list):
     df_all_api = df_all.copy(deep=True)
+
     # row r1 and r2 should be wake
     r1 = row_list[0]
     r2 = row_list[1]
@@ -477,6 +479,7 @@ def StartNext_checktype(df_all, row_list):
             r1_left_new = 0.0
         # compute bytes done so far
         r1_bytesdone_new = r1_bytesdone + r1_bytes_tran
+
 
     #----------------
     # row r2
