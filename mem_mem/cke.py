@@ -6,6 +6,47 @@ from df_util import *
 import sys
 
 #------------------------------------------------------------------------------
+#  select the first sleep call 
+#------------------------------------------------------------------------------
+def Pick_first_in_sleep(df_all_api):
+    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
+
+    # when apis are 'done' or 'wake', there are no inactive api
+    if df_sleep.shape[0] == 0: 
+        return None
+    else:
+        count = 0
+        target_rowid = 0
+        for index, row in df_sleep.iterrows():
+            if count == 0: # 1st row
+                target_rowid = index
+                break
+        target_rowid = int(target_rowid)
+        return target_rowid 
+
+
+#------------------------------------------------------------------------------
+# Set the target row to be wake status
+#------------------------------------------------------------------------------
+def SetWake(df_all, r1):
+    df_all_api = df_all.copy(deep=True)
+    df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
+    return df_all_api
+
+#------------------------------------------------------------------------------
+# Check whether two api calls are from the same stream 
+#------------------------------------------------------------------------------
+def Check_stream_id(df_all, r1, r2):
+    r1_stream = df_all[r1]['stream_id']
+    r2_stream = df_all[r2]['stream_id']
+
+    if r1_stream == r2_stream:
+        return True
+    else:
+        return False
+
+
+#------------------------------------------------------------------------------
 # Find out when to start current stream.
 # Read the prevous stream trace, 1) when current h2d exceeds the threshold timing,
 # record the current start time, and add the threshold
@@ -120,23 +161,6 @@ def init_sort_api_with_extra_cols(df_cke_list):
     return result
 
 
-#------------------------------------------------------------------------------
-#  select the first sleep call 
-#------------------------------------------------------------------------------
-def pick_first_in_sleep(df_all_api):
-    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
-
-    if df_sleep.shape[0] == 0:
-        return None
-    else:
-        count = 0
-        target_rowid = 0
-        for index, row in df_sleep.iterrows():
-            if count == 0: # 1st row
-                target_rowid = index
-                break
-        target_rowid = int(target_rowid)
-        return target_rowid 
 
 
 #------------------------------------------------------------------------------
