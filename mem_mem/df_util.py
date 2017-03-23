@@ -115,11 +115,3 @@ def UpdateWakeTiming(df_all, time_interv, cc):
 
 
 
-#------------------------------------------------------------------------------
-# Set the target row to be wake status
-#------------------------------------------------------------------------------
-def SetWake(df_all, r1):
-    df_all_api = df_all.copy(deep=True)
-    df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
-    return df_all_api
-
