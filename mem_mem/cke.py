@@ -653,6 +653,7 @@ def model_cke_from_same_kernel(Gpu, kernels):
 # end of model cke function for the same kernel
 #---------------------------------------------
 
+
 #------------------------------------------------------------------------------
 # check concurrency using current_pos
 #------------------------------------------------------------------------------
@@ -674,5 +675,48 @@ def Predict_checkCC(df_all, first, second):
         cc = 2.0
         # predcit the next 
         df_all_api = Predict_end(df_all_api, [r1, r2], ways = cc)
+
+    return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# Check the api type or not, return type
+#------------------------------------------------------------------------------
+def checkType(df_all, r1, r2):
+    r1_type = df_all.loc[r1]['api_type']
+    r2_type = df_all.loc[r2]['api_type']
+
+    whichType = None 
+    if r1_type == r2_type:
+        whichType = r1_type 
+
+    return whichType
+
+
+#------------------------------------------------------------------------------
+# Predict the end time when there is no conflict. 
+#------------------------------------------------------------------------------
+def Predict_noConflict(df_all, first, second):
+    df_all_api = df_all.copy(deep=True)
+
+    target_rows = [first, second]
+
+    for r1 in target_rows:  # work on the target row 
+        r1_type = df_all_api.loc[r1]['api_type']
+        cur_pos = df_all_api.loc[r1]['current_pos']
+
+        # update the predicted end time based on the api type
+        if r1_type in ['h2d', 'd2h']:
+            # check the bytes left and use bw to predict the end time
+            bw = df_all_api.loc[r1]['bw']
+            bytesleft = df_all_api.loc[r1]['bytes_left']
+            pred_time_left = bytesleft / bw
+            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
+        elif r1_type == 'kern':
+            # no overlapping, no change to kernel time: curpos + kernel_runtime
+            kernel_time = df_all_api.loc[r1]['end'] - df_all_api.loc[r1]['start']
+            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', kernel_time + cur_pos)
+        else:
+            sys.stderr.write('Unknown API call.')
 
     return df_all_api 
