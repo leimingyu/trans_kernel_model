@@ -77,6 +77,9 @@ def init_sort_api_with_extra_cols(df_cke_list):
     columns_ = ['start', 'end', 'api_type', 'size_kb', 'stream_id', 'status']
     df_all_api = pd.DataFrame(columns=columns_) # init
     stream_num = len(df_cke_list)
+
+    #-------------------------------
+    # generate the trace table 
     #-------------------------------
     for i in range(stream_num): # read each stream
         stream_id = i
@@ -90,8 +93,11 @@ def init_sort_api_with_extra_cols(df_cke_list):
             df_all_api = df_all_api.append({'start': start_t, 'end': end_t, 
                 'api_type': api_t, 'stream_id': stream_id, 'size_kb': size_kb,
                 'status': 'sleep'},  ignore_index = True)
+
     #-------------------------------
-    result = df_all_api.sort_values('start', ascending=1) # sort by start col
+    # sort by the start column
+    #-------------------------------
+    result = df_all_api.sort_values('start', ascending=1)
 
     # add bandwidth column
     result['bw'] = 0.0
