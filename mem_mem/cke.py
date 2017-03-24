@@ -27,6 +27,24 @@ def Pick_first_in_sleep(df_all_api):
 
 
 #------------------------------------------------------------------------------
+#  select the first wake call 
+#------------------------------------------------------------------------------
+def Pick_first_in_wake(df_all_api):
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    # when apis are 'done' or 'wake', there are no inactive api
+    if df_wake.shape[0] == 0: 
+        return None
+    else:
+        count = 0
+        target_rowid = 0
+        for index, row in df_wake.iterrows():
+            if count == 0: # 1st row
+                target_rowid = index
+                break
+        target_rowid = int(target_rowid)
+        return target_rowid 
+
+#------------------------------------------------------------------------------
 # Set the target row to be wake status
 #------------------------------------------------------------------------------
 def SetWake(df_all, r1):
@@ -53,6 +71,12 @@ def PickTwo(df_all_api):
 
     # case 1) : at the beginning, all calls are sleep, select the first two
     df_nonSleep = df_all.loc[df_all.status <> 'sleep']
+
+    all_num = df_all.shape[0]
+    wake_num = df_all.loc[df_all.status == 'wake'].shape[0]
+    done_num = df_all.loc[df_all.status == 'done'].shape[0]
+    sleep_num = df_all.loc[df_all.status == 'sleep'].shape[0]
+
     if df_nonSleep.empty:
         # pick the 1st sleep call and wake up
         r1 = Pick_first_in_sleep(df_all)
@@ -62,12 +86,22 @@ def PickTwo(df_all_api):
         r2 = Pick_first_in_sleep(df_all)
         if r2 is not None:
             df_all = SetWake(df_all, r2)
+    else:
+        if sleep_num == 0 and wake_num == 1: 
+            # case 3) the last api
+            r1 = None
+            r2 = None
+        else:
+            # there is only sleep one
+            # case 2): during iteration, select the 1st wake, wake up 2nd in sleep
+            r1 = Pick_first_in_wake(df_all)
+            r2 = Pick_first_in_sleep(df_all)
+            if r2 is not None: df_all = SetWake(df_all, r2)
 
-    # case 2): during iteration,
 
+    # print('r1:{} r2:{}'.format(r1, r2))
 
     return df_all, r1, r2
-
 
 
 #------------------------------------------------------------------------------
@@ -232,7 +266,7 @@ def Predict_end(df_all, r1, r2, ways = 1.0):
 #------------------------------------------------------------------------------
 # get the time range from wake api, to check the next concurrent api 
 #------------------------------------------------------------------------------
-def Get_predict_range(df_all):
+def Get_pred_range(df_all):
     df_wake = df_all.loc[df_all.status == 'wake']
     begT = df_wake.current_pos.min()
     endT = df_wake.pred_end.min()
@@ -519,25 +553,11 @@ def init_sort_api_with_extra_cols(df_cke_list):
     return result
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #------------------------------------------------------------------------------
 # start next api 
 # todo: add cases for kernels
 #------------------------------------------------------------------------------
-def StartNext_checktype(df_all, row_list):
+def StartNext_byType(df_all, row_list):
     df_all_api = df_all.copy(deep=True)
 
     # row r1 and r2 should be wake
@@ -545,7 +565,12 @@ def StartNext_checktype(df_all, row_list):
     r2 = row_list[1]
 
     #----------------
-    # row r1
+    # row r2
+    #----------------
+    r2_start = df_all_api.loc[r2]['start']
+
+    #----------------
+    # row r1: previous one that in wake
     #----------------
     r1_type = df_all_api.loc[r1]['api_type']
     r1_cur_pos = df_all_api.loc[r1]['current_pos']
@@ -559,7 +584,7 @@ def StartNext_checktype(df_all, row_list):
         r1_bytesdone = df_all_api.loc[r1]['bytes_done']
         r1_kb = df_all_api.loc[r1]['size_kb']
         # compute trans size
-        duration = df_all_api.loc[r2]['start'] - r1_cur_pos
+        duration = r2_start - r1_cur_pos
         r1_bytes_tran = duration * r1_bw
         # check bytes left
         r1_bytes_left = df_all_api.loc[r1]['bytes_left']
@@ -571,15 +596,6 @@ def StartNext_checktype(df_all, row_list):
             r1_left_new = 0.0
         # compute bytes done so far
         r1_bytesdone_new = r1_bytesdone + r1_bytes_tran
-
-
-    #----------------
-    # row r2
-    #----------------
-    #r2_type = df_all_api.loc[r2]['api_type']
-    r2_start = df_all_api.loc[r2]['start']
-    #if r2_type in ['h2d', 'd2h']: # for transfer api, we update the bytes info
-
 
     # update r1 status
     df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
@@ -789,7 +805,6 @@ def CheckType(df_all, r1, r2):
 
 
 
-
 #------------------------------------------------------------------------------
 # Update using pred_end when there is no conflict. 
 #------------------------------------------------------------------------------
@@ -943,46 +958,3 @@ def UpdateStream_lastapi(df_all_api):
             df_all.set_value(index, 'end', pred_end) # end will be the pred_end
 
     return df_all
-
-##------------------------------------------------------------------------------
-## start next api 
-##------------------------------------------------------------------------------
-#def StartNext(df_all, row_list):
-#    df_all_api = df_all.copy(deep=True)
-#    # row r1 and r2 should be wake
-#    r1 = row_list[0]
-#    r2 = row_list[1]
-#
-#    r1_cur_pos = df_all_api.loc[r1]['current_pos']
-#    r1_bw = df_all_api.loc[r1]['bw']
-#    r1_bytesdone = df_all_api.loc[r1]['bytes_done']
-#    r1_kb = df_all_api.loc[r1]['size_kb']
-#
-#    r2_start = df_all_api.loc[r2]['start']
-#
-#    dur = r2_start - r1_cur_pos
-#    bytes_tran = dur * r1_bw
-#    
-#    r1_bytes_left = df_all_api.loc[r1]['bytes_left']
-#    if r1_bytes_left < 1e-3:
-#        sys.stderr.write('no bytes left')
-#
-#    r1_left_new = r1_bytes_left - bytes_tran
-#    if r1_left_new < 1e-3:
-#        r1_left_new = 0.0
-#
-#    r1_bytesdone_new = r1_bytesdone + bytes_tran
-#
-#    # update r1 status
-#    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
-#    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
-#    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
-#    if r1_left_new == 0.0:
-#        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
-#        df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
-#
-#    # update r2 status
-#    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
-#
-#    return df_all_api 
-#
