@@ -1,9 +1,0 @@
-==19246== NVPROF is profiling process 19246, command: ./contention 1 0 10000000
-==19246== Profiling application: ./contention 1 0 10000000
-==19246== Profiling result:
-"Start","Duration","Grid X","Grid Y","Grid Z","Block X","Block Y","Block Z","Registers Per Thread","Static SMem","Dynamic SMem","Size","Throughput","Device","Context","Stream","Name"
-ms,ms,,,,,,,,B,B,MB,GB/s,,,,
-610.840271,6.436815,,,,,,,,,,38.146973,5.787475,"GeForce GTX 950 (0)","1","13","[CUDA memcpy HtoD]"
-617.278302,6.429999,,,,,,,,,,38.146973,5.793609,"GeForce GTX 950 (0)","1","13","[CUDA memcpy HtoD]"
-623.719789,1.276618,39063,1,1,256,1,1,8,0,0,,,"GeForce GTX 950 (0)","1","13","kernel_vectorAdd(float const *, float const *, int, int, float*) [215]"
-625.003191,6.269646,,,,,,,,,,38.146973,5.941787,"GeForce GTX 950 (0)","1","13","[CUDA memcpy DtoH]"
