@@ -33,17 +33,205 @@ def SetWake(df_all, r1):
     df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
     return df_all_api
 
+
 #------------------------------------------------------------------------------
 # Check whether two api calls are from the same stream 
 #------------------------------------------------------------------------------
 def Check_stream_id(df_all, r1, r2):
-    r1_stream = df_all[r1]['stream_id']
-    r2_stream = df_all[r2]['stream_id']
+    r1_stream = df_all['stream_id'][r1]
+    r2_stream = df_all['stream_id'][r2]
 
     if r1_stream == r2_stream:
         return True
     else:
         return False
+
+
+#------------------------------------------------------------------------------
+# Check overlapping 
+#------------------------------------------------------------------------------
+def Check_ovlp(df_all_api, first, second):
+    r1 = first
+    r2 = second 
+
+    curapi_start = df_all_api.loc[r1]['start']
+    curapi_end = df_all_api.loc[r1]['end']
+
+    nextapi_start = df_all_api.loc[r2]['start']
+    nextapi_end = df_all_api.loc[r2]['end']
+
+    #print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
+
+    ovlp = False 
+    if curapi_start <= nextapi_start < curapi_end:
+        ovlp = True 
+    return ovlp 
+
+
+#------------------------------------------------------------------------------
+# Find the concurrency starting pos and update the  
+#------------------------------------------------------------------------------
+def Update_before_ovlp(df_all, r1, r2):
+    df_all_api = df_all.copy(deep=True)
+    #print('{} {}'.format(r1, r2))
+
+    curapi_start = df_all_api.loc[r1]['start']
+    curapi_end = df_all_api.loc[r1]['end']
+    curapi = df_all_api.loc[r1]['api_type']
+    curapi_stream = df_all_api.loc[r1]['stream_id']
+
+    nextapi_start = df_all_api.loc[r2]['start']
+    nextapi_end = df_all_api.loc[r2]['end']
+    nextapi = df_all_api.loc[r2]['api_type']
+    nextapi_stream = df_all_api.loc[r2]['stream_id']
+
+    no_ovlap_time = nextapi_start - curapi_start
+    #print('cur start {} next start {}'.format(curapi_start, nextapi_start))
+    #print no_ovlap_time
+
+    #----------------------------
+    # update r1 with current pos
+    #----------------------------
+    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', nextapi_start)
+
+    # the call type for r1 is h2d or d2h
+    if curapi in ['h2d', 'd2h'] :
+        curr_trans = df_all_api.loc[r1]['bw'] * no_ovlap_time # full bw since no ovlp
+        curr_tot   = df_all_api.loc[r1]['size_kb']
+        curr_left  = curr_tot - curr_trans
+        # update the bytes_done
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done',  curr_trans)
+        df_all_api = UpdateCell(df_all_api, r1, 'bytes_left',  curr_left)
+
+    #----------------------------
+    # update r2 with current pos
+    #----------------------------
+    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', nextapi_start)
+
+    return df_all_api
+
+
+#------------------------------------------------------------------------------
+# Predict the end time when there is no conflict. 
+#------------------------------------------------------------------------------
+def Predict_noConflict(df_all, first, second):
+    df_all_api = df_all.copy(deep=True)
+
+    target_rows = [first, second]
+
+    for r1 in target_rows:  # work on the target row 
+        r1_type = df_all_api.loc[r1]['api_type']
+        cur_pos = df_all_api.loc[r1]['current_pos']
+
+        # update the predicted end time based on the api type
+        if r1_type in ['h2d', 'd2h']:
+            # check the bytes left and use bw to predict the end time
+            bw = df_all_api.loc[r1]['bw']
+            bytesleft = df_all_api.loc[r1]['bytes_left']
+            pred_time_left = bytesleft / bw
+            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
+        elif r1_type == 'kern':
+            # no overlapping, no change to kernel time: curpos + kernel_runtime
+            kernel_time = df_all_api.loc[r1]['end'] - df_all_api.loc[r1]['start']
+            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', kernel_time + cur_pos)
+        else:
+            sys.stderr.write('Unknown API call.')
+
+    return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# Predict the end time when there concurrency for data transfer 
+#------------------------------------------------------------------------------
+def Predict_transCC(df_all, first, second):
+    df_all_api = df_all.copy(deep=True)
+
+    cc = 2.0
+    
+    row_list = [first, second]
+
+    for i in row_list:
+        # the bandwidth is shared among all the concurrent transfer
+        bw = df_all_api.loc[i]['bw'] / cc
+        # predict the transfer time based on the bandwidth
+        cur_pred_time_left = df_all_api.loc[i]['bytes_left'] / bw
+        # update the future ending time
+        df_all_api = UpdateCell(df_all_api, i, 'pred_end', 
+                cur_pred_time_left + df_all_api.loc[i]['current_pos'] )
+
+    return df_all_api 
+
+
+#------------------------------------------------------------------------------
+# Predict the ending time: based on the concurrency
+# 1) if they are both h2d_h2d, d2h_d2h or kern_kern, we need to predict use different mode
+# 2) if they are different apis, there is no interference
+#------------------------------------------------------------------------------
+def Predict_end(df_all, r1, r2, ways = 1.0):
+    """
+    From the input dataframe, adjust the row info, depending on the concurrency.
+    """
+    df_all_api = df_all.copy(deep=True)
+
+    cc = ways # concurrency
+
+    r1_apitype = df_all_api.loc[r1]['api_type']
+    r2_apitype = df_all_api.loc[r2]['api_type']
+
+    interference = True if r1_apitype == r2_apitype else False
+
+    if interference == False:
+        df_all_api = Predict_noConflict(df_all_api, r1, r2)
+    else:
+        if r1_apitype in ['h2d', 'd2h']: # data transfer model
+            df_all_api = Predict_transCC(df_all_api, r1, r2)
+        elif r1_apitype == 'kern': # todo: cke model
+            pass 
+        else:
+            sys.stderr.write('Unknown API call.')
+    
+    return df_all_api
+
+
+#------------------------------------------------------------------------------
+# get the time range from wake api, to check the next concurrent api 
+#------------------------------------------------------------------------------
+def Get_predict_range(df_all):
+    df_wake = df_all.loc[df_all.status == 'wake']
+    begT = df_wake.current_pos.min()
+    endT = df_wake.pred_end.min()
+    return [begT, endT]
+
+
+#------------------------------------------------------------------------------
+# check concurrency by another cuda stream within a time range 
+#------------------------------------------------------------------------------
+def Check_cc_by_time(df_all, time_range):
+    df_all_api = df_all.copy(deep=True)
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
+
+    # find out the stream ids in df_wake
+    new_stream_ls = []
+    for x in df_sleep.stream_id.unique():
+        if x not in df_wake.stream_id.unique():
+            new_stream_ls.append(x)
+    
+    has_conc_stream = 1 if new_stream_ls else 0;
+    #print('has_conc_stream {}'.format(has_conc_stream))
+
+    # todo:
+    # look for streams that start within the time range
+    extra_cc = 0
+    if has_conc_stream == 1:
+        for sid in new_stream_ls:
+            df_cur = df_sleep.loc[df_sleep.stream_id == sid]
+            for index, row in df_cur.iterrows():
+                startT = row.start
+                if time_range[0] <= startT < time_range[1]: # api in the range
+                    extra_cc = 1
+
+    return extra_cc 
 
 
 #------------------------------------------------------------------------------
@@ -163,137 +351,23 @@ def init_sort_api_with_extra_cols(df_cke_list):
 
 
 
-#------------------------------------------------------------------------------
-# check concurrency 
-#------------------------------------------------------------------------------
-def check_cc(df_all_api, first, second):
-    r1 = first
-    r2 = second 
-
-    curapi_start = df_all_api.loc[r1]['start']
-    curapi_end = df_all_api.loc[r1]['end']
-
-    nextapi_start = df_all_api.loc[r2]['start']
-    nextapi_end = df_all_api.loc[r2]['end']
-
-    #print('{} {} {}'.format(curapi_start, nextapi_start, curapi_end))
-
-    cc = False 
-    if curapi_start <= nextapi_start < curapi_end:
-        cc = True 
-    return cc
 
 
 
 
 
-#------------------------------------------------------------------------------
-# check concurrency by another cuda stream within a time range 
-#------------------------------------------------------------------------------
-def check_cc_by_time(df_all, time_range):
-    df_all_api = df_all.copy(deep=True)
-    df_wake = df_all_api.loc[df_all_api.status == 'wake']
-    df_sleep = df_all_api.loc[df_all_api.status == 'sleep']
-
-    # find out the stream ids in df_wake
-    new_stream_ls = []
-    for x in df_sleep.stream_id.unique():
-        if x not in df_wake.stream_id.unique():
-            new_stream_ls.append(x)
-    
-    has_conc_stream = 1 if new_stream_ls else 0;
-    #print('has_conc_stream {}'.format(has_conc_stream))
-
-    # todo:
-    # look for streams that start within the time range
-    extra_cc = 0
-    if has_conc_stream == 1:
-        for sid in new_stream_ls:
-            df_cur = df_sleep.loc[df_sleep.stream_id == sid]
-            for index, row in df_cur.iterrows():
-                startT = row.start
-                if time_range[0] <= startT < time_range[1]: # api in the range
-                    extra_cc = 1
-
-    return extra_cc 
 
 
-#------------------------------------------------------------------------------
-# Find the concurrency starting pos and update the  
-#------------------------------------------------------------------------------
-def update_before_conc(df_all, r1, r2):
-    #print('{} {}'.format(r1, r2))
-    df_all_api = df_all.copy(deep=True)
-
-    curapi_start = df_all_api.loc[r1]['start']
-    curapi_end = df_all_api.loc[r1]['end']
-    curapi = df_all_api.loc[r1]['api_type']
-    curapi_stream = df_all_api.loc[r1]['stream_id']
-
-    nextapi_start = df_all_api.loc[r2]['start']
-    nextapi_end = df_all_api.loc[r2]['end']
-    nextapi = df_all_api.loc[r2]['api_type']
-    nextapi_stream = df_all_api.loc[r2]['stream_id']
-
-    no_ovlap_time = nextapi_start - curapi_start
-    #print('cur start {} next start {}'.format(curapi_start, nextapi_start))
-    #print no_ovlap_time
-
-    # the call type for r1 is h2d or d2h
-    if curapi in ['h2d', 'd2h'] :
-        #print curapi
-        curr_trans = df_all_api.loc[r1]['bw'] * no_ovlap_time
-        curr_tot   = df_all_api.loc[r1]['size_kb']
-        curr_left  = curr_tot - curr_trans
-        #print curr_trans 
-        #print curr_left
-
-        # update the bytes_done
-        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done',  curr_trans)
-        df_all_api = UpdateCell(df_all_api, r1, 'bytes_left',  curr_left)
-        df_all_api = UpdateCell(df_all_api, r1, 'current_pos', nextapi_start)
-
-    # update the current_pos for r2
-    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', nextapi_start)
-
-    return df_all_api
 
 
-#------------------------------------------------------------------------------
-# Predict the ending time: based on the concurrency
-#------------------------------------------------------------------------------
-def Predict_end(df_all, row_list, ways = 1.0):
-    """
-    From the input dataframe, adjust the row info, depending on the concurrency.
-    """
-    df_all_api = df_all.copy(deep=True)
-
-    cc = ways # concurrency
-
-    for i in row_list:
-        # the bandwidth is shared among all the concurrent transfer
-        bw = df_all_api.loc[i]['bw'] / cc
-        # predict the transfer time based on the bandwidth
-        cur_pred_time_left = df_all_api.loc[i]['bytes_left'] / bw
-        #print('bw : {}'.format(df_all_api.loc[i]['bw']))
-        #print('bytes_left : {}'.format(df_all_api.loc[i]['bytes_left']))
-
-        # update the cell: time_left 
-        #df_all_api = UpdateCell(df_all_api, i, 'time_left', cur_pred_time_left)
-
-        # update the future ending time
-        df_all_api = UpdateCell(df_all_api, i, 'pred_end', 
-                cur_pred_time_left + df_all_api.loc[i]['current_pos'] )
-    
-    return df_all_api
 
 
 #------------------------------------------------------------------------------
 # Update the ending time: based on the concurrency
 #------------------------------------------------------------------------------
-def Update_with_pred_end(df_all, row_list, ways = 1.0):
-    startT = row_list[0]
-    endT = row_list[1]
+def Update_with_pred_end(df_all, timerange_list, ways = 1.0):
+    startT = timerange_list[0]
+    endT = timerange_list[1]
     dur = endT - startT
 
     cc = ways
@@ -420,16 +494,6 @@ def UpdateStreamTime(df_all_api):
 
     return df_all
 
-#------------------------------------------------------------------------------
-# get the time range from wake api, to check the next concurrent api 
-#------------------------------------------------------------------------------
-def Get_next_range(df_all):
-    #df_all_api = df_all.copy(deep=True)
-    #df_wake = df_all_api.loc[df_all_api.status == 'wake']
-    df_wake = df_all.loc[df_all.status == 'wake']
-    begT = df_wake.current_pos.min()
-    endT = df_wake.pred_end.min()
-    return [begT, endT]
 
 
 #------------------------------------------------------------------------------
@@ -711,7 +775,7 @@ def Predict_checkCC(df_all, first, second):
     if conc == 1:
         cc = 2.0
         # predcit the next 
-        df_all_api = Predict_end(df_all_api, [r1, r2], ways = cc)
+        df_all_api = Predict_end(df_all_api, r1, r2, ways = cc)
 
     return df_all_api 
 
@@ -730,33 +794,6 @@ def checkType(df_all, r1, r2):
     return whichType
 
 
-#------------------------------------------------------------------------------
-# Predict the end time when there is no conflict. 
-#------------------------------------------------------------------------------
-def Predict_noConflict(df_all, first, second):
-    df_all_api = df_all.copy(deep=True)
-
-    target_rows = [first, second]
-
-    for r1 in target_rows:  # work on the target row 
-        r1_type = df_all_api.loc[r1]['api_type']
-        cur_pos = df_all_api.loc[r1]['current_pos']
-
-        # update the predicted end time based on the api type
-        if r1_type in ['h2d', 'd2h']:
-            # check the bytes left and use bw to predict the end time
-            bw = df_all_api.loc[r1]['bw']
-            bytesleft = df_all_api.loc[r1]['bytes_left']
-            pred_time_left = bytesleft / bw
-            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
-        elif r1_type == 'kern':
-            # no overlapping, no change to kernel time: curpos + kernel_runtime
-            kernel_time = df_all_api.loc[r1]['end'] - df_all_api.loc[r1]['start']
-            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', kernel_time + cur_pos)
-        else:
-            sys.stderr.write('Unknown API call.')
-
-    return df_all_api 
 
 
 #------------------------------------------------------------------------------
