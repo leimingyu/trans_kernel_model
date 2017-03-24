@@ -5,6 +5,7 @@ from avgblkmodel import *
 from df_util import *
 import sys
 
+
 #------------------------------------------------------------------------------
 #  select the first sleep call 
 #------------------------------------------------------------------------------
@@ -42,6 +43,31 @@ def AllDone(df_all):
         return True
     else:
         return False
+
+
+#------------------------------------------------------------------------------
+#  select two api calls to start prediction 
+#------------------------------------------------------------------------------
+def PickTwo(df_all_api):
+    df_all = df_all_api.copy(deep=True)
+
+    # case 1) : at the beginning, all calls are sleep, select the first two
+    df_nonSleep = df_all.loc[df_all.status <> 'sleep']
+    if df_nonSleep.empty:
+        # pick the 1st sleep call and wake up
+        r1 = Pick_first_in_sleep(df_all)
+        if r1 is not None:
+            df_all = SetWake(df_all, r1) 
+        # pick another 
+        r2 = Pick_first_in_sleep(df_all)
+        if r2 is not None:
+            df_all = SetWake(df_all, r2)
+
+    # case 2): during iteration,
+
+
+    return df_all, r1, r2
+
 
 
 #------------------------------------------------------------------------------
@@ -506,48 +532,6 @@ def init_sort_api_with_extra_cols(df_cke_list):
 
 
 
-#------------------------------------------------------------------------------
-# start next api 
-#------------------------------------------------------------------------------
-def StartNext(df_all, row_list):
-    df_all_api = df_all.copy(deep=True)
-    # row r1 and r2 should be wake
-    r1 = row_list[0]
-    r2 = row_list[1]
-
-    r1_cur_pos = df_all_api.loc[r1]['current_pos']
-    r1_bw = df_all_api.loc[r1]['bw']
-    r1_bytesdone = df_all_api.loc[r1]['bytes_done']
-    r1_kb = df_all_api.loc[r1]['size_kb']
-
-    r2_start = df_all_api.loc[r2]['start']
-
-    dur = r2_start - r1_cur_pos
-    bytes_tran = dur * r1_bw
-    
-    r1_bytes_left = df_all_api.loc[r1]['bytes_left']
-    if r1_bytes_left < 1e-3:
-        sys.stderr.write('no bytes left')
-
-    r1_left_new = r1_bytes_left - bytes_tran
-    if r1_left_new < 1e-3:
-        r1_left_new = 0.0
-
-    r1_bytesdone_new = r1_bytesdone + bytes_tran
-
-    # update r1 status
-    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
-    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
-    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
-    if r1_left_new == 0.0:
-        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
-        df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
-
-    # update r2 status
-    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
-
-    return df_all_api 
-
 
 #------------------------------------------------------------------------------
 # start next api 
@@ -793,7 +777,7 @@ def Predict_checkCC(df_all, first, second):
 #------------------------------------------------------------------------------
 # Check the api type or not, return type
 #------------------------------------------------------------------------------
-def checkType(df_all, r1, r2):
+def CheckType(df_all, r1, r2):
     r1_type = df_all.loc[r1]['api_type']
     r2_type = df_all.loc[r2]['api_type']
 
@@ -959,3 +943,46 @@ def UpdateStream_lastapi(df_all_api):
             df_all.set_value(index, 'end', pred_end) # end will be the pred_end
 
     return df_all
+
+##------------------------------------------------------------------------------
+## start next api 
+##------------------------------------------------------------------------------
+#def StartNext(df_all, row_list):
+#    df_all_api = df_all.copy(deep=True)
+#    # row r1 and r2 should be wake
+#    r1 = row_list[0]
+#    r2 = row_list[1]
+#
+#    r1_cur_pos = df_all_api.loc[r1]['current_pos']
+#    r1_bw = df_all_api.loc[r1]['bw']
+#    r1_bytesdone = df_all_api.loc[r1]['bytes_done']
+#    r1_kb = df_all_api.loc[r1]['size_kb']
+#
+#    r2_start = df_all_api.loc[r2]['start']
+#
+#    dur = r2_start - r1_cur_pos
+#    bytes_tran = dur * r1_bw
+#    
+#    r1_bytes_left = df_all_api.loc[r1]['bytes_left']
+#    if r1_bytes_left < 1e-3:
+#        sys.stderr.write('no bytes left')
+#
+#    r1_left_new = r1_bytes_left - bytes_tran
+#    if r1_left_new < 1e-3:
+#        r1_left_new = 0.0
+#
+#    r1_bytesdone_new = r1_bytesdone + bytes_tran
+#
+#    # update r1 status
+#    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
+#    df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
+#    df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
+#    if r1_left_new == 0.0:
+#        df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
+#        df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
+#
+#    # update r2 status
+#    df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
+#
+#    return df_all_api 
+#
