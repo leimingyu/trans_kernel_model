@@ -99,7 +99,7 @@ def PickTwo(df_all_api):
             if r2 is not None: df_all = SetWake(df_all, r2)
 
 
-    # print('r1:{} r2:{}'.format(r1, r2))
+    print('row:{} row:{}'.format(r1, r2))
 
     return df_all, r1, r2
 
@@ -577,6 +577,7 @@ def StartNext_byType(df_all, row_list):
     #----------------
     r1_type = df_all_api.loc[r1]['api_type']
     r1_cur_pos = df_all_api.loc[r1]['current_pos']
+    r1_end = df_all_api.loc[r1]['end']
     r1_left_new = 0.0
     r1_bytesdone_new = 0.0
     r1_kb = 0.0
@@ -589,14 +590,18 @@ def StartNext_byType(df_all, row_list):
         # compute trans size
         duration = r2_start - r1_cur_pos
         r1_bytes_tran = duration * r1_bw
+
         # check bytes left
         r1_bytes_left = df_all_api.loc[r1]['bytes_left']
+        #print('bytes left : {}'.format(r1_bytes_left))
         if r1_bytes_left < 1e-3:
             sys.stderr.write('no bytes left')
+
         # calculate how many bytes left
         r1_left_new = r1_bytes_left - r1_bytes_tran
         if r1_left_new < 1e-3:
             r1_left_new = 0.0
+
         # compute bytes done so far
         r1_bytesdone_new = r1_bytesdone + r1_bytes_tran
 
@@ -606,6 +611,7 @@ def StartNext_byType(df_all, row_list):
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
         if r1_left_new == 0.0:
+            df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end) # use the org end time 
             df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
             df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
 
@@ -961,3 +967,17 @@ def UpdateStream_lastapi(df_all_api):
             df_all.set_value(index, 'end', pred_end) # end will be the pred_end
 
     return df_all
+
+
+#------------------------------------------------------------------------------
+# Check whether any row is done
+#------------------------------------------------------------------------------
+def CheckRowDone(df_all, r1, r2):
+    r1_status = df_all.loc[r1]['status']
+    r2_status = df_all.loc[r2]['status']
+
+    next_iter = False
+    if r1_status == 'done' or r2_status == 'done':
+        next_iter = True
+
+    return next_iter
