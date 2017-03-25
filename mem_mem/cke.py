@@ -474,6 +474,9 @@ def find_h2d_start(df_trace, H2D_H2D_OVLP_TH):
     if h2d_ovlp == 1:
         stream_start_time = h2d_starttime + H2D_H2D_OVLP_TH
 
+    ## warning : add api launch ovhd
+    stream_start_time += 0.002
+
     return stream_start_time
 
 
