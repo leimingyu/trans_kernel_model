@@ -85,18 +85,20 @@ def sm_coef_bytes(df_trace):
 def trans_coef_kb(df_trace):
     size_unit = df_trace['Size'].iloc[0]
 
-    size_coef = 1.0 # KB
+    coef = 0.0 # KB
 
     if size_unit == 'B':
-        size_coef = 1e-3
+        coef = 1e-3
     elif size_unit == 'MB':
-        size_coef = 1e3
+        coef = 1e3
     elif size_unit == 'GB':
-        size_coef = 1e6
+        coef = 1e6
+    elif size_unit == 'KB':
+        coef = 1.0 # KB 
     else:
         sys.stderr.write('Unknown Size Unit.\n')
 
-    return size_coef 
+    return coef 
 
 
 #------------------------------------------------------------------------------
