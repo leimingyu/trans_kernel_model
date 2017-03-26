@@ -582,6 +582,8 @@ def StartNext_byType(df_all, row_list):
     r1_bytesdone_new = 0.0
     r1_kb = 0.0
 
+
+
     # if r1 type is transfer call, we need to update the transfer status
     if r1_type in ['h2d', 'd2h']:
         r1_bw = df_all_api.loc[r1]['bw']
@@ -607,6 +609,7 @@ def StartNext_byType(df_all, row_list):
 
     # update r1 status
     df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
+
     if r1_type in ['h2d', 'd2h']:
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
@@ -617,6 +620,8 @@ def StartNext_byType(df_all, row_list):
 
     # update r2 status: current pos
     df_all_api = UpdateCell(df_all_api, r2, 'current_pos', r2_start)
+
+    #print('r1 : {}, r2 : {}, r2_start : {}'.format(r1, r2, r2_start))
 
     return df_all_api 
 
