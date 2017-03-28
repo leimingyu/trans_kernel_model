@@ -1,9 +1,10 @@
-from math import *
 import pandas as pd
 import numpy as np
-from avgblkmodel import *
-from df_util import *
+from math import *
 import sys
+
+from df_util import *
+#from avgblkmodel import *
 
 
 #------------------------------------------------------------------------------
@@ -550,7 +551,7 @@ def init_sort_api_with_extra_cols(df_cke_list):
     result['bytes_done'] = 0.0
     result['bytes_left'] = result['size_kb']
     result['current_pos'] = 0.0
-    result['time_left'] = 0.0
+    #result['time_left'] = 0.0
     result['pred_end'] = 0.0
 
     return result
@@ -608,13 +609,17 @@ def StartNext_byType(df_all, row_list):
         r1_bytesdone_new = r1_bytesdone + r1_bytes_tran
 
     # update r1 status
-    df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start) # use coming start time
+    if r2_start < r1_end: # r2 starts before r1 ends
+        df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r2_start)
+    else:   # r2 start after r1 ends
+        df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end)
 
     if r1_type in ['h2d', 'd2h']:
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
         if r1_left_new == 0.0:
-            df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end) # use the org end time 
+            # WARNING: use the org end time : if current call is done by the time r2 starts
+            df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end) 
             df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
             df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
 
