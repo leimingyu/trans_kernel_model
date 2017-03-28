@@ -991,3 +991,16 @@ def CheckRowDone(df_all, r1, r2):
         next_iter = True
 
     return next_iter
+
+
+#------------------------------------------------------------------------------
+# Check whether any row is done
+#------------------------------------------------------------------------------
+def FindStreamAndKernID(df_all_api, r1):
+    stream_id = df_all_api.loc[r1]['stream_id']
+
+    df_stream = df_all_api.loc[df_all_api.stream_id == stream_id]
+    kernel_id = df_all_api.loc[r1]['stream_id']
+
+
+
