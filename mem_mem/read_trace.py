@@ -1,8 +1,45 @@
 import pandas as pd
 import numpy as np
+from math import *
 import operator
 import sys
 
+from model_param import *
+
+
+#class DeviceInfo():
+#    def __init__(self, sm_num=0, sharedmem_per_sm=0, reg_per_sm=0, 
+#            maxthreads_per_sm=0):
+#        self.sm_num = sm_num
+#        self.sharedmem_per_sm = sharedmem_per_sm # bytes
+#        self.reg_per_sm = reg_per_sm
+#        self.maxthreads_per_sm = maxthreads_per_sm
+
+
+#class KernConfig():
+#    def __init__(self,
+#                 grid_x = 0, grid_y = 0, grid_z = 0,
+#                 blk_x = 0, blk_y = 0, blk_z = 0,
+#                 regs_per_thread = 0, sm_per_block = 0):
+#        self.grid_x = grid_x
+#        self.grid_y = grid_y
+#        self.grid_z = grid_z
+#        self.blk_x = blk_x
+#        self.blk_y = blk_y
+#        self.blk_z = blk_z
+#        self.regs_per_thread = regs_per_thread
+#        self.sm_per_block = sm_per_block
+
+
+#class KernelInfo():
+#    def __init__(self, blockDim=0, gridDim=0, reg_per_thread=0, 
+#            sharedmem_per_blk=0, runtime_ms = 0, avg_blk_time = 0):
+#        self.blockDim = blockDim
+#        self.gridDim = gridDim
+#        self.reg_per_thread = reg_per_thread
+#        self.sharedmem_per_blk =  sharedmem_per_blk
+#        self.runtime_ms = runtime_ms
+#        self.avg_blk_time = avg_blk_time
 
 class transfer():
     def __init__(self, start=0.0, end=0.0, trans_size = 0.0):
@@ -11,27 +48,14 @@ class transfer():
         self.size = trans_size 
 
 
-class KernConfig():
-    def __init__(self,
-                 grid_x = 0, grid_y = 0, grid_z = 0,
-                 blk_x = 0, blk_y = 0, blk_z = 0,
-                 regs_per_thread = 0, sm_per_block = 0):
-        self.grid_x = grid_x
-        self.grid_y = grid_y
-        self.grid_z = grid_z
-        self.blk_x = blk_x
-        self.blk_y = blk_y
-        self.blk_z = blk_z
-        self.regs_per_thread = regs_per_thread
-        self.sm_per_block = sm_per_block
-
-
 class streams():
     def __init__(self):
         self.h2d = []
         self.d2h = []
         self.kernel = []
         self.kernel_info = []
+
+
 
 #------------------------------------------------------------------------------
 # Use ms for timing
@@ -181,32 +205,37 @@ def read_row_for_timing(df_row, start_coef_ms, duration_coef_ms, trans_coef=0.0)
     return stream_id, api_type, start_time_ms, end_time_ms, trans_kb
 
 
-def trace2dataframe(trace_file):
+#------------------------------------------------------------------------------
+#  Read csv trace to dataframe in pandas. 
+#------------------------------------------------------------------------------
+def Trace2dataframe(trace_file):
     """
     read the trace file into dataframe using pandas
     """
     # There are max 17 columns in the output csv
-    col_name = ["Start","Duration","Grid X","Grid Y","Grid Z","Block X","Block Y","Block Z","Registers Per Thread","Static SMem","Dynamic SMem","Size","Throughput","Device","Context","Stream","Name"]
-
+    col_name = ["Start","Duration","Grid X","Grid Y","Grid Z","Block X",
+            "Block Y","Block Z","Registers Per Thread","Static SMem",
+            "Dynamic SMem","Size","Throughput","Device","Context","Stream","Name"]
     df_trace = pd.read_csv(trace_file, names=col_name, engine='python')
-
     rows_to_skip = 0
-
     # find out the number of rows to skip
     for index, row in df_trace.iterrows():
         if row['Start'] == 'Start':
             rows_to_skip = index
             break
-
     # read the input csv again
     df_trace = pd.read_csv(trace_file, skiprows=rows_to_skip)
 
     return df_trace
 
 
-def get_stream_info(df_trace):
+#------------------------------------------------------------------------------
+#  Read csv trace to dataframe in pandas. 
+#------------------------------------------------------------------------------
+def Get_stream_info(df_trace):
     """
-    read dataframe into stream list which contains the h2d/d2h/kernel star and end time in ms.
+    Read dataframe into stream list,
+    which contains the h2d/d2h/kernel start and end time in ms.
     """
     streamList = []
 
@@ -241,8 +270,10 @@ def get_stream_info(df_trace):
         elif api_type == 'd2h':
             streamList[sid].d2h.append(transfer(start_time_ms, end_time_ms, Tkb))
         elif api_type == 'kernel':
+            # kernel runtime
             streamList[sid].kernel.append(transfer(start_time_ms, end_time_ms))
-            streamList[sid].kernel_info.append(kerninfo) # add the kernel info
+            # kernel info 
+            streamList[sid].kernel_info.append(kerninfo)
         else:
             print "Unknown. Error."
 
@@ -254,10 +285,10 @@ def check_kernel_ovlprate(trace_file):
     Read the trace file and figure out the overlapping rate for the two kernel execution.
     """
     # read data from the trace file
-    df_trace = trace2dataframe(trace_file)
+    df_trace = Trace2dataframe(trace_file)
 
     # extract stream info
-    streamList = get_stream_info(df_trace)
+    streamList = Get_stream_info(df_trace)
 
     # check kernel overlapping
     preK_start = streamList[0].kernel[0].start_time_ms
@@ -323,108 +354,10 @@ def kernel_slowdown(s1_kernel_dd, s2_kernel_dd):
 
 
 
-def model_param_from_trace(df_trace):
-    """
-    Extract api call and timings from trace of single stream. Return dataframe.
-    """
-    stream_id_list = df_trace['Stream'].unique()
-    stream_id_list = stream_id_list[~np.isnan(stream_id_list)] # remove nan
-    num_streams = len(stream_id_list)
-    #print('number of streams : {}'.format(num_streams))
-
-    streamList = [[] for i in range(num_streams)]
-
-    start_coef, duration_coef = time_coef_ms(df_trace) # convert time to ms
-
-    trans_coef = trans_coef_kb(df_trace) # normalize the transfer size to KB
-
-    for rowID in xrange(1, df_trace.shape[0]):
-        stream_id, api_type, start_time_ms, end_time_ms = \
-                read_row_for_timing(df_trace.iloc[[rowID]], start_coef, 
-                        duration_coef, trans_coef)
-
-        # find out index of the stream
-        sid, = np.where(stream_id_list==stream_id)
-        # print("{} {} : {} - {}".format(sid, api_type, start_time_ms, end_time_ms))
-        streamList[sid].append([api_type, start_time_ms, end_time_ms])
-
-
-    current_stream_list = streamList[0]
-    rows = len(current_stream_list)
-
-
-    #-----------------------------------------------------------------
-    # full api timing for current stream
-    #-----------------------------------------------------------------
-    df_stream = pd.DataFrame(columns=['seq', 'api_type', 'start', 'end'])
-
-    # record the 1st api call
-    local_api_type = current_stream_list[0][0]
-    local_start = current_stream_list[0][1]
-    local_end = current_stream_list[0][2]
-    df_stream = df_stream.append({'seq': 0, 'api_type': local_api_type,
-                                  'start': local_start, 'end': local_end}, ignore_index=True)
-
-    for i in range(1, rows):
-        prev_api = current_stream_list[i-1][0]
-        prev_end = current_stream_list[i-1][2]
-
-        curr_api = current_stream_list[i][0]
-        # print curr_api
-        curr_start = current_stream_list[i][1]
-        curr_end   = current_stream_list[i][2]
-
-        #----------------
-        # add overhead
-        #----------------
-        add_ovhd = 0
-
-        if prev_api == 'h2d' and curr_api == 'h2d':    # h2d - h2d case
-            local_api = 'h2d_h2d_ovhd'
-            add_ovhd = 1
-
-        if prev_api == 'h2d' and curr_api == 'kern':   # h2d - kern case
-            local_api = 'h2d_kern_ovhd'
-            add_ovhd = 1
-
-        if prev_api == 'kern' and curr_api == 'kern':   # kern - kern case
-            local_api = 'kern_kern_ovhd'
-            add_ovhd = 1
-
-        if prev_api == 'kern' and curr_api == 'd2h':   # kern - d2h case
-            local_api = 'kern_d2h_ovhd'
-            add_ovhd = 1
-
-        if prev_api == 'd2h' and curr_api == 'd2h':   # d2h - d2h case
-            local_api = 'd2h_d2h_ovhd'
-            add_ovhd = 1
-
-        if add_ovhd == 1:
-            local_start = prev_end
-            local_end = curr_start
-            df_stream = df_stream.append({'seq': 0, 'api_type': local_api,
-                                          'start': local_start, 'end': local_end}, ignore_index=True)
-
-        #----------------
-        # add current api
-        #----------------
-        df_stream = df_stream.append({'seq': 0, 'api_type': curr_api,
-                                      'start': curr_start, 'end': curr_end}, ignore_index=True)
-
-
-    df_stream['duration'] = df_stream['end'] - df_stream['start']
-
-    # update the calling sequence
-    for index, row in df_stream.iterrows():
-        df_stream.loc[index, 'seq'] = index
-
-    return df_stream
-
-
-# --------------------------
+# -----------------------------------------------------------------------------
 # get timing trace from the dataframe
-# --------------------------
-def get_timing(df_trace):
+# -----------------------------------------------------------------------------
+def Get_timing_from_trace(df_trace):
     """
     Extract api call and timings from trace of single stream. Return dataframe.
     """
@@ -477,7 +410,7 @@ def get_timing(df_trace):
 # Get total runtime from the trace.
 # trace table columns: stream 	api_type 	start 	end 	duration
 # ------------------------
-def getTotalRuntime(df_trace_new):
+def GetTotalRuntime(df_trace_new):
     # case 1) the input is a list of dataframe
     if isinstance(df_trace_new, list):
         #print('it is list')
@@ -501,7 +434,7 @@ def getTotalRuntime(df_trace_new):
 # -----------------------------------------------------------------------------
 # Reset the start time to zero for the input dataframe trace.
 # -----------------------------------------------------------------------------
-def reset_starting(df_org):
+def Reset_starting(df_org):
     df_trace = df_org.copy(deep=True)
     offset = df_trace.start[0]
     #print offset
@@ -557,3 +490,39 @@ def find_d2h_timing(df_trace):
             Tend = row.end
             break;
     return Tbegin, Tend
+
+
+
+
+#------------------------------------------------------------------------------
+# Read the kernel information from trace file. 
+# Warning: assume there is only one kernel in the cuda stream
+#       we need to generate data dict to store the kernel_info by the signature
+#------------------------------------------------------------------------------
+def GetKernelInfo(df_trace, Gpu):
+    # extract kernel info
+    streaminfo = Get_stream_info(df_trace)
+    # print('streams : {}'.format(len(streaminfo)))
+    # print len(streaminfo[0].kernel)
+    # print len(streaminfo[0].kernel_info)
+
+    current_kern_info = streaminfo[0].kernel_info[0]
+    grid_dim = float(current_kern_info.grid_x) * float(current_kern_info.grid_y) * float(current_kern_info.grid_z)
+    block_dim = float(current_kern_info.blk_x) * float(current_kern_info.blk_y) * float(current_kern_info.blk_z)
+    reg_per_thread = float(current_kern_info.regs_per_thread)
+    sm_per_blk = float(current_kern_info.sm_per_block)
+
+    # kernel runtime in ms
+    current_kern =  streaminfo[0].kernel[0]
+    kern_runtime_ms = float(current_kern.end_time_ms) - float(current_kern.start_time_ms)
+
+    kernel = KernelInfo()
+    kernel.blockDim = block_dim
+    kernel.gridDim = grid_dim
+    kernel.reg_per_thread = reg_per_thread
+    kernel.sharedmem_per_blk = sm_per_blk
+    kernel.runtime_ms = kern_runtime_ms
+
+    kernel.avg_blk_time = AvgBlkTime(Gpu, kernel)
+
+    return kernel
