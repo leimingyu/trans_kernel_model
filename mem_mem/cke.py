@@ -1005,8 +1005,9 @@ def FindStreamAndKernID(df_all_api, r1):
     kcount = 0
     for index, row in df_stream.iterrows():
         if row.api_type == 'kern':
-        
-    kernel_id = df_all_api.loc[r1]['stream_id']
+            kcount = kcount + 1
+            if index == r1:
+                kernel_id = kcount 
 
 
 
