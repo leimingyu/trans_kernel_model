@@ -1014,4 +1014,8 @@ def FindStreamAndKernID(df_all_api, r1):
     return stream_id, kernel_id
 
 
-
+#------------------------------------------------------------------------------
+# Get the start time for the current row/api call. 
+#------------------------------------------------------------------------------
+def FindStreamAndKernID(df_all_api, r1):
+cke.GetStartTime(df_all_api, r1)
