@@ -158,3 +158,10 @@ def init_gpu(Gpu):
     sm_trace = [trace_table for x in range(sm_num)]
 
     return sm_res_list, sm_trace
+
+
+#------------------------------------------------------------------------------
+# Copy current kernel info to another data structure 
+#------------------------------------------------------------------------------
+def Copy_kern_info(kernel):
+    kern = KernelInfo()
