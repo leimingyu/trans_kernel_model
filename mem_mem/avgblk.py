@@ -29,7 +29,9 @@ def Search_block_start(df_sm_trace, current_kernel_id):
         return 0.0
 
 
-
+#------------------------------------------------------------------------------
+# Figure out which sm to start for current kernel 
+#------------------------------------------------------------------------------
 def find_sm2start(sm_trace_list, kern_start):
     sm_num = len(sm_trace_list)
     
@@ -44,8 +46,8 @@ def find_sm2start(sm_trace_list, kern_start):
     if empSM == sm_num:
         return 0, AfterPrevKern       
     
-    # case 2） there are traces: 
-    # by the time where the kernel starts, all the blocks are done already, use sm 0
+    # case 2） there are traces: by the time where the kernel starts, 
+    # all the blocks are done already, use sm 0
     max_t = 0
     for df_sm in sm_trace_list:
         cur_max = df_sm.block_end.max()
