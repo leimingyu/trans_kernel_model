@@ -15,10 +15,12 @@ def Search_block_start(df_sm_trace, current_kernel_id):
        
     if not df_active.empty:
         blk2start = df_active['block_start'].max() # find the closest block
+        df_active_current_kernel = \
+                df_active.loc[df_active['kernel_id'] == current_kernel_id]
 
-        df_active_current_kernel = df_active.loc[df_active['kernel_id'] == current_kernel_id]
         if not df_active_current_kernel.empty:
-            blk2start = df_active_current_kernel['block_start'].max()  # find the closest blk for current kernel
+            # find the closest blk for current kernel
+            blk2start = df_active_current_kernel['block_start'].max()
     
         return blk2start
     else:
@@ -27,6 +29,48 @@ def Search_block_start(df_sm_trace, current_kernel_id):
         return 0.0
 
 
+
+def find_sm2start(sm_trace_list, kern_start):
+    sm_num = len(sm_trace_list)
+    
+    AfterPrevKern = False
+    
+    empSM = 0
+    # case 1) there are no trace on each sm
+    for df_sm in sm_trace_list:
+        if df_sm.empty:
+            empSM = empSM + 1 # do nothing
+
+    if empSM == sm_num:
+        return 0, AfterPrevKern       
+    
+    # case 2） there are traces: 
+    # by the time where the kernel starts, all the blocks are done already, use sm 0
+    max_t = 0
+    for df_sm in sm_trace_list:
+        cur_max = df_sm.block_end.max()
+        if cur_max > max_t:
+            max_t = cur_max
+            
+    if max_t <= kern_start:
+        AfterPrevKern = True
+        return 0, AfterPrevKern
+    else:
+        # case 3) : check currently active blocks
+        df_sm = sm_trace_list[0]
+        df_activeblk = df_sm.loc[df_sm['active'] == 1]
+        min_t = df_activeblk.block_end.min()
+        target_sm = 0
+        
+        for i in range(1,sm_num):
+            df_sm = sm_trace_list[i]
+            df_activeblk = df_sm.loc[df_sm['active'] == 1]
+            sm_blk_min = df_activeblk.block_end.min()
+            if sm_blk_min < min_t:
+                min_t = sm_blk_min
+                target_sm = i
+                
+        return target_sm, AfterPrevKern
 
 
 #------------------------------------------------------------------------------
