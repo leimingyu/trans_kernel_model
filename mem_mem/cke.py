@@ -998,6 +998,7 @@ def CheckRowDone(df_all, r1, r2):
 #------------------------------------------------------------------------------
 def FindStreamAndKernID(df_all_api, r1):
     stream_id = df_all_api.loc[r1]['stream_id']
+    stream_id = int(stream_id)
 
     df_stream = df_all_api.loc[df_all_api.stream_id == stream_id]
     # iterate through each row, count when the index == r1
@@ -1009,6 +1010,7 @@ def FindStreamAndKernID(df_all_api, r1):
             if index == r1:
                 kernel_id = kcount - 1  # index kernel from 0 
 
+    kernel_id = int(kernel_id)
     return stream_id, kernel_id
 
 
