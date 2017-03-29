@@ -814,13 +814,6 @@ def Update_wake_kernOvlp(df_all, timeRange):
         df_all_api.set_value(index,'current_pos', row.pred_end)
         df_all_api.set_value(index,'status', 'done')
 
-            # deduct the bytes, update teh current pos
-            df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
-            df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
-            df_all_api.set_value(index,'current_pos', endT)
-            df_all_api.set_value(index,'time_left', 0) # clear
-            df_all_api.set_value(index,'pred_end', 0) # clear
-
     return df_all_api 
 
 #------------------------------------------------------------------------------
