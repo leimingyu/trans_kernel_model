@@ -799,6 +799,50 @@ def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
 
 
 #------------------------------------------------------------------------------
+# Update using pred_end when there is no conflict. 
+#------------------------------------------------------------------------------
+def Update_wake_kernOvlp(df_all, timeRange, ways = 1.0):
+    df_all_api = df_all.copy(deep=True)
+    df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
+
+    startT = timeRange[0]
+    endT = timeRange[1]
+    dur = endT - startT
+
+    cc = ways
+
+    # iterate through each row to update the pred_end
+    for index, row in df_wake.iterrows():
+        bw = row.bw / cc
+        bytes_tran = dur * bw 
+        bytes_don = row.bytes_done
+        bytes_lft = row.bytes_left
+        bytes_left = row.bytes_left - bytes_tran
+
+        done = 0
+        if abs(bytes_left - 0.0) <  1e-3: #  smaller than 1 byte
+            done = 1
+
+        if done == 1:
+            # update bytes_done
+            tot_size = row.size_kb
+            #print tot_size
+            df_all_api.set_value(index,'bytes_done', tot_size)
+            df_all_api.set_value(index,'bytes_left', 0)
+            df_all_api.set_value(index,'time_left', 0) # no time_left
+            df_all_api.set_value(index,'current_pos', row.pred_end)
+            df_all_api.set_value(index,'status', 'done')
+        else:
+            # deduct the bytes, update teh current pos
+            df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
+            df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
+            df_all_api.set_value(index,'current_pos', endT)
+            df_all_api.set_value(index,'time_left', 0) # clear
+            df_all_api.set_value(index,'pred_end', 0) # clear
+
+    return df_all_api 
+
+#------------------------------------------------------------------------------
 # For the last api call, update the entire trace table. 
 #------------------------------------------------------------------------------
 def UpdateStream_lastapi(df_all_api):
