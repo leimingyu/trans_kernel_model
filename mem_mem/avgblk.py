@@ -202,12 +202,12 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
 
                 # update the trace table
                 sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
-                                                          'block_id': bid, 
-                                                          'block_start': block_start,
-                                                          'block_end' : block_end,
-                                                          'batch_id': sms[sm_id].batch,
-                                                          'kernel_id': i,
-                                                          'active': 1}, ignore_index=True)
+                                              'block_id': bid, 
+                                              'block_start': block_start,
+                                              'block_end' : block_end,
+                                              'batch_id': sms[sm_id].batch,
+                                              'kernel_id': i,
+                                              'active': 1}, ignore_index=True)
             
         # end of running blocks for current kernel        
             
