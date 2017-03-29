@@ -804,16 +804,10 @@ def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
 def Update_wake_kernOvlp(df_all, timeRange):
     df_all_api = df_all.copy(deep=True)
     df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
-    df_wake_kern = df_wake.loc[df_wake.api_type== 'wake'] # wake apis
-
-    startT = timeRange[0]
-    endT = timeRange[1]
-    dur = endT - startT
-
-    cc = ways
+    df_wake_kern = df_wake.loc[df_wake.api_type== 'kern'] # wake kernels 
 
     # iterate through each row to update the pred_end
-    for index, row in df_wake.iterrows():
+    for index, row in df_wake_kern.iterrows():
         bw = row.bw / cc
         bytes_tran = dur * bw 
         bytes_don = row.bytes_done
