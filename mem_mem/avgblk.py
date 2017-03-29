@@ -113,7 +113,7 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
                 # find the row index of active blocks
                 for index, row in df_activeblk.iterrows():     
                     sm_trace[myid].loc[index]['active'] = 0  # deactivate 
-                    sms[myid].Rm(kern)                       # free the block resource
+                    sms[myid].Rm(kern)    # free the block resource
                     myid = myid + 1
 
 
