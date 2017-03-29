@@ -218,6 +218,14 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
 
 
 #------------------------------------------------------------------------------
+# Find kern time on current sm 
+#------------------------------------------------------------------------------
+def find_kernel_time(df_sm_trace, kern_id):
+    df_kern = df_sm_trace.loc[df_sm_trace.kernel_id == kern_id]
+    # min of start time, max of end time
+    return df_kern.block_start.min(), df_kern.block_end.max()
+
+#------------------------------------------------------------------------------
 # Find out kernel runtime by reading the traces from each SM
 #------------------------------------------------------------------------------
 def Get_KernTime(sm_trace):
