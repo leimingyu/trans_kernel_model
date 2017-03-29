@@ -804,6 +804,7 @@ def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
 def Update_wake_kernOvlp(df_all, timeRange):
     df_all_api = df_all.copy(deep=True)
     df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
+    df_wake_kern = df_wake.loc[df_wake.api_type== 'wake'] # wake apis
 
     startT = timeRange[0]
     endT = timeRange[1]
