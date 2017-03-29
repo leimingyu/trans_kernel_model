@@ -215,3 +215,48 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
                 
     # return the updated sm resource and trace table
     return sms, sm_trace
+
+
+#------------------------------------------------------------------------------
+# Find out kernel runtime by reading the traces from each SM
+#------------------------------------------------------------------------------
+def Get_KernTime(sm_trace):
+    kern_dd = {}
+    kernel_unique_ls = []
+
+    for df_sm in sm_trace:
+        kids = df_sm.kernel_id.unique() # find out all the kernels on current sm
+
+        # case 1: given the empty dd
+        if not kern_dd: 
+            for kern_id in kids: # find kernel time for each unique kernel
+                startT, endT = find_kernel_time(df_sm, kern_id)
+                kern_dd[kern_id] = [startT, endT]
+                kernel_unique_ls.append(kern_id)
+
+        # case 2: the dd has values
+        if kern_dd:
+            for kern_id in kids: # find kernel time for each unique kernel
+                startT, endT = find_kernel_time(df_sm, kern_id)
+                if kern_id in kernel_unique_ls:
+                    # compare the min and max for start and end, update accordingly
+                    prev_start = kern_dd[kern_id][0]
+                    prev_end = kern_dd[kern_id][1]
+                    cur_start, cur_end = find_kernel_time(df_sm, kern_id)
+
+                    update = 0
+                    if cur_start < prev_start:
+                        prev_start = cur_start # update
+                        update = update + 1
+                    if cur_end > prev_end:
+                        prev_end = cur_end # update
+                        update = update + 1
+
+                    if update > 0:
+                        kern_dd[kern_id] = [prev_start, prev_end]
+
+                else:
+                    kern_dd[kern_id] = [startT, endT] # add to dd
+                    kernel_unique_ls.append(kern_id)
+                    
+    return kern_dd
