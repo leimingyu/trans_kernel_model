@@ -173,3 +173,18 @@ def Copy_kern_info(kernel):
             kernel.avg_blk_time,
             kernel.start_ms)
     return kern
+
+
+#------------------------------------------------------------------------------
+# Print Kernel information 
+#------------------------------------------------------------------------------
+def Dump_kern_info(kernel):
+    print('KernelInfo:\n\tblockDim {}, gridDim {}, Regs {}, SharedMem {}, '
+        '\n\tRuntime(ms) {}, AvgBLKTime(ms) {}, '
+        '\n\tKernStart(ms) {}'.format(kernel.blockDim,
+            kernel.gridDim,
+            kernel.reg_per_thread,
+            kernel.sharedmem_per_blk,
+            kernel.runtime_ms,
+            kernel.avg_blk_time,
+            kernel.start_ms))
