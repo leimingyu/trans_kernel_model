@@ -808,26 +808,12 @@ def Update_wake_kernOvlp(df_all, timeRange):
 
     # iterate through each row to update the pred_end
     for index, row in df_wake_kern.iterrows():
-        bw = row.bw / cc
-        bytes_tran = dur * bw 
-        bytes_don = row.bytes_done
-        bytes_lft = row.bytes_left
-        bytes_left = row.bytes_left - bytes_tran
+        df_all_api.set_value(index,'bytes_done', tot_size)
+        df_all_api.set_value(index,'bytes_left', 0)
+        df_all_api.set_value(index,'time_left', 0) # no time_left
+        df_all_api.set_value(index,'current_pos', row.pred_end)
+        df_all_api.set_value(index,'status', 'done')
 
-        done = 0
-        if abs(bytes_left - 0.0) <  1e-3: #  smaller than 1 byte
-            done = 1
-
-        if done == 1:
-            # update bytes_done
-            tot_size = row.size_kb
-            #print tot_size
-            df_all_api.set_value(index,'bytes_done', tot_size)
-            df_all_api.set_value(index,'bytes_left', 0)
-            df_all_api.set_value(index,'time_left', 0) # no time_left
-            df_all_api.set_value(index,'current_pos', row.pred_end)
-            df_all_api.set_value(index,'status', 'done')
-        else:
             # deduct the bytes, update teh current pos
             df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
             df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
