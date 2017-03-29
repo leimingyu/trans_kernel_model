@@ -196,8 +196,9 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
                         break # jump out of the loop
                     else:
                         # not enough to allocat another block, remove
-                        # Warning: ???
-                        df_loc = df_sm.loc[df_sm['active'] == 1]
+                        # Warning: ??? I may just pass
+                        #df_loc = df_sm.loc[df_sm['active'] == 1]
+                        pass
 
                 # update the trace table
                 sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
