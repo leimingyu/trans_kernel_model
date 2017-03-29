@@ -799,9 +799,9 @@ def Update_wake_transferOvlp(df_all, timeRange, ways = 1.0):
 
 
 #------------------------------------------------------------------------------
-# Update using pred_end when there is no conflict. 
+# consider the two kernels are done, update the current pos 
 #------------------------------------------------------------------------------
-def Update_wake_kernOvlp(df_all, timeRange):
+def Update_wake_kernOvlp(df_all):
     df_all_api = df_all.copy(deep=True)
     df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
     df_wake_kern = df_wake.loc[df_wake.api_type== 'kern'] # wake kernels 
