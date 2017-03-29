@@ -808,13 +808,11 @@ def Update_wake_kernOvlp(df_all, timeRange):
 
     # iterate through each row to update the pred_end
     for index, row in df_wake_kern.iterrows():
-        df_all_api.set_value(index,'bytes_done', tot_size)
-        df_all_api.set_value(index,'bytes_left', 0)
-        df_all_api.set_value(index,'time_left', 0) # no time_left
         df_all_api.set_value(index,'current_pos', row.pred_end)
         df_all_api.set_value(index,'status', 'done')
 
     return df_all_api 
+
 
 #------------------------------------------------------------------------------
 # For the last api call, update the entire trace table. 
