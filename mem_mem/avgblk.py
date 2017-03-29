@@ -247,7 +247,7 @@ def Get_KernTime(sm_trace):
             for kern_id in kids: # find kernel time for each unique kernel
                 startT, endT = find_kernel_time(df_sm, kern_id)
                 if kern_id in kernel_unique_ls:
-                    # compare the min and max for start and end, update accordingly
+                    # compare the min and max for start and end, update
                     prev_start = kern_dd[kern_id][0]
                     prev_end = kern_dd[kern_id][1]
                     cur_start, cur_end = find_kernel_time(df_sm, kern_id)
