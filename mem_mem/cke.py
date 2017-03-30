@@ -81,6 +81,7 @@ def PickTwo(df_all_api):
     if df_nonSleep.empty:
         # pick the 1st sleep call and wake up
         r1 = Pick_first_in_sleep(df_all)
+        print('r1: {} '.format(r1))
         if r1 is not None:
             df_all = SetWake(df_all, r1) 
         # pick another 
