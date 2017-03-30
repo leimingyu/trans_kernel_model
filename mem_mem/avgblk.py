@@ -225,6 +225,7 @@ def find_kernel_time(df_sm_trace, kern_id):
     # min of start time, max of end time
     return df_kern.block_start.min(), df_kern.block_end.max()
 
+
 #------------------------------------------------------------------------------
 # Find out kernel runtime by reading the traces from each SM
 #------------------------------------------------------------------------------

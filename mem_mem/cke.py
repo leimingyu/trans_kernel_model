@@ -623,6 +623,7 @@ def StartNext_byType(df_all, row_list):
         if r1_left_new == 0.0:
             # WARNING: use the org end time : if current call is done by the time r2 starts
             df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end) 
+            df_all_api = UpdateCell(df_all_api, r1, 'pred_end', r1_end)  # update
             df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
             df_all_api = UpdateCell(df_all_api, r1, 'status', 'done')
 
@@ -885,3 +886,4 @@ def FindStreamAndKernID(df_all_api, r1):
 #------------------------------------------------------------------------------
 def GetStartTime(df_all_api, r1):
     return float(df_all_api.loc[r1]['start'])
+
