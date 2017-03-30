@@ -91,13 +91,13 @@ def PickTwo(df_all_api):
         if r2 is not None:
             df_all = SetWake(df_all, r2)
     else:
+        # case 3) the last api (last sleep)
         if sleep_num == 0 and wake_num == 1: 
-            # case 3) the last api
             r1 = None
             r2 = None
         else:
-            # there is only sleep one
             # case 2): during iteration, select the 1st wake, wake up 2nd in sleep
+            # there is only sleep one
             r1 = Pick_first_in_wake(df_all)
             r2 = Pick_first_in_sleep(df_all)
             if r2 is not None: df_all = SetWake(df_all, r2)
