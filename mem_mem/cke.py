@@ -71,7 +71,7 @@ def PickTwo(df_all_api):
     df_all = df_all_api.copy(deep=True)
 
     # case 1) : at the beginning, all calls are sleep, select the first two
-    df_nonSleep = df_all.loc[df_all.status <> 'sleep']
+    df_ActiveAndDone = df_all.loc[df_all.status <> 'sleep']
 
     all_num = df_all.shape[0]
     wake_num = df_all.loc[df_all.status == 'wake'].shape[0]
@@ -79,7 +79,8 @@ def PickTwo(df_all_api):
 
     sleep_num = df_all.loc[df_all.status == 'sleep'].shape[0]
 
-    if df_nonSleep.empty:
+    # case 1) at the very beginning
+    if df_ActiveAndDone.empty:
         # pick the 1st sleep call and wake up
         r1 = Pick_first_in_sleep(df_all)
         #print('r1: {} '.format(r1))
