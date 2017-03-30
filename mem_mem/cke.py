@@ -837,7 +837,7 @@ def UpdateStream_lastapi(df_all_api):
             df_all.set_value(index, 'pred_end', pred_end)
             df_all.set_value(index, 'bytes_left', 0)
             df_all.set_value(index, 'bytes_done', row.size_kb)
-            df_all.set_value(index, 'time_left', 0)
+            #df_all.set_value(index, 'time_left', 0)
             df_all.set_value(index, 'status', 'done')
             df_all.set_value(index, 'current_pos', pred_end) # current will be the pred_end
             df_all.set_value(index, 'end', pred_end) # end will be the pred_end
