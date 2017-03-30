@@ -76,6 +76,7 @@ def PickTwo(df_all_api):
     all_num = df_all.shape[0]
     wake_num = df_all.loc[df_all.status == 'wake'].shape[0]
     done_num = df_all.loc[df_all.status == 'done'].shape[0]
+
     sleep_num = df_all.loc[df_all.status == 'sleep'].shape[0]
 
     if df_nonSleep.empty:
