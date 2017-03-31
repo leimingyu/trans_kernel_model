@@ -528,3 +528,4 @@ def GetKernelInfo(df_trace, Gpu):
     return kernel
 
 def DumpKernelInfo(kernel):
+    print(''.format())
