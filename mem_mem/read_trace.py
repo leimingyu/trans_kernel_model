@@ -528,4 +528,9 @@ def GetKernelInfo(df_trace, Gpu):
     return kernel
 
 def DumpKernelInfo(kernel):
-    print(''.format())
+    print(''.format(kernel.blockDim,
+        kernel.gridDim,
+        kernel.reg_per_thread,
+        kernel.sharedmem_per_blk,
+        kernel.runtime_ms,
+        kernel.avg_blk_time))
