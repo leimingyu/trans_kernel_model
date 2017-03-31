@@ -526,3 +526,5 @@ def GetKernelInfo(df_trace, Gpu):
     kernel.avg_blk_time = AvgBlkTime(Gpu, kernel)
 
     return kernel
+
+def DumpKernelInfo(kernel):
