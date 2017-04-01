@@ -84,6 +84,7 @@ def UpdateCell(df_all_api, row_id, col_name, val):
     df.set_value(row_id, col_name, val)
     return df
 
+
 #------------------------------------------------------------------------------
 # Set the target row to be wake status
 #------------------------------------------------------------------------------
@@ -211,3 +212,5 @@ def Dump_kernel_info(kernel):
         kernel.avg_blk_time,
         kernel.start_ms))
 
+
+def get_rowinfo(kernel):
