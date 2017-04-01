@@ -164,7 +164,7 @@ def init_gpu(Gpu):
 # Copy current kernel info to another data structure 
 # like deep copy
 #------------------------------------------------------------------------------
-def Copy_kern_info(kernel):
+def Copy_kernel_info(kernel):
     kern = KernelInfo(kernel.blockDim,
             kernel.gridDim,
             kernel.reg_per_thread,
