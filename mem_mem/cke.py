@@ -3,8 +3,7 @@ import numpy as np
 from math import *
 import sys
 
-from df_util import *
-#from avgblkmodel import *
+from model_param import *
 
 
 #------------------------------------------------------------------------------
@@ -45,13 +44,6 @@ def Pick_first_in_wake(df_all_api):
         target_rowid = int(target_rowid)
         return target_rowid 
 
-#------------------------------------------------------------------------------
-# Set the target row to be wake status
-#------------------------------------------------------------------------------
-def SetWake(df_all, r1):
-    df_all_api = df_all.copy(deep=True)
-    df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
-    return df_all_api
 
 #------------------------------------------------------------------------------
 # Set the target row to be wake status
@@ -502,7 +494,8 @@ def init_trace_list(df_trace, stream_num = 1, h2d_ovlp_th = 3.158431):
     for i in range(1,stream_num):
         # compute the time for the previous data transfer
         stream_startTime = find_h2d_start(df_cke_list[i-1], h2d_ovlp_th)
-        #print('stream_startTime : {}'.format(stream_startTime))
+        print('stream_startTime : {}'.format(stream_startTime))
+
         df_cke_list[i].start += stream_startTime
         df_cke_list[i].end   += stream_startTime
 
@@ -887,3 +880,36 @@ def FindStreamAndKernID(df_all_api, r1):
 def GetStartTime(df_all_api, r1):
     return float(df_all_api.loc[r1]['start'])
 
+
+#------------------------------------------------------------------------------
+#  select two api calls to start prediction 
+#------------------------------------------------------------------------------
+def start_api(df_all_api):
+    df_all = df_all_api.copy(deep=True)
+
+    df_sleep = df_all.loc[df_all.status == 'sleep']
+
+    count = 0
+    target_rowid = 0
+    target_stream = 0
+    for index, row in df_sleep.iterrows():
+        if count == 0: # 1st row
+            target_rowid = index
+            target_stream = row.stream_id
+            break
+
+    target_rowid = int(target_rowid)
+
+    # set it wake
+    df_all = SetWake(df_all, target_rowid)
+
+    return df_all, target_rowid, target_stream 
+
+
+#------------------------------------------------------------------------------
+# find unique streams in the dataframe 
+#------------------------------------------------------------------------------
+def find_unique_streams(df_all_api):
+    df_all = df_all_api.copy(deep=True)
+    results = list(df_all.stream_id.unique()) # numpy array to list
+    return results
