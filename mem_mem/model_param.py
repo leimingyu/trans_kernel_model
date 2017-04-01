@@ -188,3 +188,21 @@ def Dump_kern_info(kernel):
             kernel.runtime_ms,
             kernel.avg_blk_time,
             kernel.start_ms))
+
+#------------------------------------------------------------------------------
+# Print Kernel information 
+#------------------------------------------------------------------------------
+def Dump_kernel_info(kernel):
+    print('Kernel Info'
+        '\n\t\tblockDim {}'
+        '\n\t\tgridkDim {}'
+        '\n\t\tregs {}'
+        '\n\t\tshared memory {}'
+        '\n\t\truntime (ms) {}'
+        '\n\t\taverage block execution time (ms) {}'.format(kernel.blockDim,
+        kernel.gridDim,
+        kernel.reg_per_thread,
+        kernel.sharedmem_per_blk,
+        kernel.runtime_ms,
+        kernel.avg_blk_time))
+
