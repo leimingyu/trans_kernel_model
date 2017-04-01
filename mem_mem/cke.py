@@ -900,9 +900,6 @@ def pick_first_sleep(df_all_api):
 
     target_rowid = int(target_rowid)
 
-    # set it wake
-    df_all = SetWake(df_all, target_rowid)
-
     return df_all, target_rowid, target_stream 
 
 
