@@ -213,4 +213,11 @@ def Dump_kernel_info(kernel):
         kernel.start_ms))
 
 
-def get_rowinfo(kernel):
+def get_rowinfo(df_all, rowid):
+    row_dd = {}
+    row_dd['start'] = df_all.loc[rowid]['start']
+    df_all.loc[rowid]['start']
+    df_all.loc[rowid]['start']
+    df_all.loc[rowid]['start']
+    df_all.loc[rowid]['start']
+    df_all.loc[rowid]['start']
