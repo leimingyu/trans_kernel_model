@@ -10,7 +10,6 @@ from math import *
 #------------------------------------------------------------------------------
 def UpdateCell(df_all_api, row_id, col_name, val):
     df = df_all_api.copy(deep=True)
-    #df.iloc[row_id, df.columns.get_loc(col_name)] = val
     df.set_value(row_id, col_name, val)
     return df
 
