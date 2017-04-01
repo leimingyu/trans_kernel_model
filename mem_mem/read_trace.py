@@ -527,16 +527,3 @@ def GetKernelInfo(df_trace, Gpu):
 
     return kernel
 
-def DumpKernelInfo(kernel):
-    print('Kernel Info'
-        '\n\t\tblockDim {}'
-        '\n\t\tgridkDim {}'
-        '\n\t\tregs {}'
-        '\n\t\tshared memory {}'
-        '\n\t\truntime (ms) {}'
-        '\n\t\taverage block execution time (ms) {}'.format(kernel.blockDim,
-        kernel.gridDim,
-        kernel.reg_per_thread,
-        kernel.sharedmem_per_blk,
-        kernel.runtime_ms,
-        kernel.avg_blk_time))
