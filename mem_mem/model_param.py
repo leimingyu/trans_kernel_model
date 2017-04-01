@@ -77,6 +77,23 @@ class SM_Stat:
 
 
 #------------------------------------------------------------------------------
+# Update Cell Function.
+#------------------------------------------------------------------------------
+def UpdateCell(df_all_api, row_id, col_name, val):
+    df = df_all_api.copy(deep=True)
+    df.set_value(row_id, col_name, val)
+    return df
+
+#------------------------------------------------------------------------------
+# Set the target row to be wake status
+#------------------------------------------------------------------------------
+def SetWake(df_all, r1):
+    df_all_api = df_all.copy(deep=True)
+    df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
+    return df_all_api
+
+
+#------------------------------------------------------------------------------
 # Compute max blocks per sm
 #------------------------------------------------------------------------------
 def MaxBLK_Per_SM(Gpu, Kern):
