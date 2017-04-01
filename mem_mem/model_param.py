@@ -216,8 +216,3 @@ def Dump_kernel_info(kernel):
 def get_rowinfo(df_all, rowid):
     row_dd = {}
     row_dd['start'] = df_all.loc[rowid]['start']
-    df_all.loc[rowid]['start']
-    df_all.loc[rowid]['start']
-    df_all.loc[rowid]['start']
-    df_all.loc[rowid]['start']
-    df_all.loc[rowid]['start']
