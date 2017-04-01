@@ -216,3 +216,14 @@ def Dump_kernel_info(kernel):
 def get_rowinfo(df_all, rowid):
     row_dd = {}
     row_dd['start'] = df_all.loc[rowid]['start']
+    row_dd['end'] = df_all.loc[rowid]['end']
+    row_dd['api_type'] = df_all.loc[rowid]['api_type']
+    row_dd['size_kb'] = df_all.loc[rowid]['size_kb']
+    row_dd['stream_id'] = df_all.loc[rowid]['stream_id']
+    row_dd['status'] = df_all.loc[rowid]['status']
+    row_dd['bw'] = df_all.loc[rowid]['bw']
+    row_dd['bytes_done'] = df_all.loc[rowid]['bytes_done']
+    row_dd['bytes_left'] = df_all.loc[rowid]['bytes_left']
+    row_dd['current_pos'] = df_all.loc[rowid]['current_pos']
+    row_dd['pred_end'] = df_all.loc[rowid]['pred_end']
+    return row_dd
