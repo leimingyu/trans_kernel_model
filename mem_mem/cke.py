@@ -884,7 +884,7 @@ def GetStartTime(df_all_api, r1):
 #------------------------------------------------------------------------------
 #  select two api calls to start prediction 
 #------------------------------------------------------------------------------
-def start_api(df_all_api):
+def pick_first_sleep(df_all_api):
     df_all = df_all_api.copy(deep=True)
 
     df_sleep = df_all.loc[df_all.status == 'sleep']
