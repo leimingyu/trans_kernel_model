@@ -898,9 +898,7 @@ def pick_first_sleep(df_all_api):
             target_stream = row.stream_id
             break
 
-    target_rowid = int(target_rowid)
-
-    return df_all, target_rowid, target_stream 
+    return df_all, int(target_rowid), target_stream 
 
 
 #------------------------------------------------------------------------------
