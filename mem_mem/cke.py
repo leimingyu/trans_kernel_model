@@ -1064,6 +1064,9 @@ def finish_call(df_all, row):
     # if it is transfer api 
     if my_type in ['h2d', 'd2h']:
         # update the bytes
-        df = UpdateCell(df, row, 'current_pos', my_pred_end) 
+        df = UpdateCell(df, row, 'bytes_done', GetInfo(df, row, 'size_kb')) 
+        df = UpdateCell(df, row, 'bytes_left', 0) 
+
+    return df
 
 
