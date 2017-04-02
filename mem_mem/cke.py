@@ -1056,3 +1056,8 @@ def finish_call(df_all, row):
     df = df_all.copy(deep=True)
     my_type = GetInfo(df, row, 'api_type') 
 
+    # if it is transfer api 
+    if my_type in ['h2d', 'd2h']:
+        UpdateCell()
+
+
