@@ -1052,6 +1052,7 @@ def find_unique_streams(df_all_api):
 #------------------------------------------------------------------------------
 # Finish current call 
 #------------------------------------------------------------------------------
-def finish_call(df_all_api, row):
-
+def finish_call(df_all, row):
+    df = df_all.copy(deep=True)
+    my_type = GetInfo(df, row, 'api_type') 
 
