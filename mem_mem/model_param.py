@@ -263,3 +263,9 @@ def FindComingCalls(df_all_api, r1, stream_num):
 #------------------------------------------------------------------------------
 def GetStreamID(df_all, r1):
     return df_all.loc[r1]['stream_id']
+
+#------------------------------------------------------------------------------
+# Get stream id for target row 
+#------------------------------------------------------------------------------
+def GetInfo(df_all, row, column):
+    return df_all.loc[r1]['stream_id']
