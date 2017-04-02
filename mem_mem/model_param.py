@@ -86,12 +86,19 @@ def UpdateCell(df_all_api, row_id, col_name, val):
 
 
 #------------------------------------------------------------------------------
-# Set the target row to be wake status
+# Set the target row to be wake status, return stream id
 #------------------------------------------------------------------------------
 def SetWake(df_all, r1):
-    df_all_api = df_all.copy(deep=True)
-    df_all_api = UpdateCell(df_all_api, r1, 'status', 'wake')
-    return df_all_api
+    df= df_all.copy(deep=True)
+
+    df= UpdateCell(df, r1, 'status', 'wake')
+
+    # also update the current and pred end
+    df = UpdateCell(df, r1, 'current_pos', get_rowinfo(df, r1)['start'])
+    df = UpdateCell(df, r1, 'pred_end', get_rowinfo(df, r1)['end'])
+
+    return df
+
 
 
 #------------------------------------------------------------------------------
@@ -227,3 +234,32 @@ def get_rowinfo(df_all, rowid):
     row_dd['current_pos'] = df_all.loc[rowid]['current_pos']
     row_dd['pred_end'] = df_all.loc[rowid]['pred_end']
     return row_dd
+
+
+#------------------------------------------------------------------------------
+# Select (stream_num - 1) call after current call 
+#------------------------------------------------------------------------------
+def FindComingCalls(df_all_api, r1, stream_num):
+    df_all = df_all_api.copy(deep=True)
+    lookahead = stream_num - 1
+    start_count = False
+    count = 0
+    result_rows_list = []
+    for index, row in df_all.iterrows():
+        if index == r1:
+            start_count = True 
+
+        if start_count:
+            # record current row, avoiding the 1st api 
+            if count > 0:  result_rows_list.append(index) 
+            if count == lookahead: break
+            count = count + 1
+            
+    return result_rows_list
+    
+
+#------------------------------------------------------------------------------
+# Get stream id for target row 
+#------------------------------------------------------------------------------
+def GetStreamID(df_all, r1):
+    return df_all.loc[r1]['stream_id']
