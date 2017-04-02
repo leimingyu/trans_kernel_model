@@ -1047,3 +1047,11 @@ def find_unique_streams(df_all_api):
     df_all = df_all_api.copy(deep=True)
     results = list(df_all.stream_id.unique()) # numpy array to list
     return results
+
+
+#------------------------------------------------------------------------------
+# Finish current call 
+#------------------------------------------------------------------------------
+def finish_api(df_all_api):
+
+
