@@ -265,7 +265,7 @@ def GetStreamID(df_all, r1):
     return df_all.loc[r1]['stream_id']
 
 #------------------------------------------------------------------------------
-# Get stream id for target row 
+# Get info for current row 
 #------------------------------------------------------------------------------
 def GetInfo(df_all, row, column):
-    return df_all.loc[r1]['stream_id']
+    return df_all.loc[row][column]
