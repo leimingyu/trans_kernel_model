@@ -355,6 +355,10 @@ def UpdateStreamTime(df_all_api):
     # copy the input
     df_all = df_all_api.copy(deep=True)
     df_done = df_all.loc[df_all.status == 'done'] # find out which api is done
+
+    if df_done.empty:
+        return df_all
+
     done_streams = df_done.stream_id.unique() # np.array
 
     for x in done_streams:
@@ -554,6 +558,114 @@ def init_sort_api_with_extra_cols(df_cke_list):
 
 
 #------------------------------------------------------------------------------
+#  check concurrency during an interval for wake api calls
+#------------------------------------------------------------------------------
+def Check_CC(df_wake, begT, endT):
+    cc = 0.0
+    cc_rows = []
+    for index, row in df_wake.iterrows():
+        mystart = row.start
+        myend   = row.end
+        
+        if mystart < endT : # if current wake starts before the end time, add cc
+            cc = cc + 1.0
+            cc_rows.append(index) # find out the row index
+    return cc, cc_rows
+
+
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def Update_row_by_cc(df_all, r, cc, timeRange):
+    df = df_all.copy(deep=True)
+
+    begT = timeRange[0]
+    endT = timeRange[1]
+    duration =  endT - begT
+
+    my_type   = df.loc[r]['api_type']
+    my_curpos = df.loc[r]['current_pos']
+    my_end    = df.loc[r]['end']
+    my_kb     = df.loc[r]['size_kb']
+
+    my_left_new = 0.0
+    my_bytes_done_new = 0.0
+
+    if my_type in ['h2d', 'd2h']:
+        my_bytes_left = df.loc[r]['bytes_left']
+        my_bytes_done = df.loc[r]['bytes_done']
+        my_bw         = df.loc[r]['bw'] / cc
+
+        bytes_tran = duration * my_bw
+
+        if my_bytes_left < 1e-3:
+            sys.stderr.write('no bytes left')
+        
+        # calculate how many bytes left
+        my_left_new = my_bytes_left - bytes_tran
+        if my_left_new < 1e-3:
+            my_left_new = 0.0
+
+        # compute bytes done so far
+        my_bytes_done_new = my_bytes_done + bytes_tran
+
+    df = UpdateCell(df, r, 'current_pos', endT)
+
+    if my_type in ['h2d', 'd2h']:
+        df = UpdateCell(df, r, 'bytes_left', my_left_new)
+        df = UpdateCell(df, r, 'bytes_done', my_bytes_done_new)
+        if my_left_new == 0.0:
+            # WARNING: use the org end time : 
+            # if current call is done by the time minT starts
+            df= UpdateCell(df, r, 'current_pos', my_end) 
+            df= UpdateCell(df, r, 'pred_end', my_end)  # update
+            df= UpdateCell(df, r, 'bytes_done', my_kb)
+            df= UpdateCell(df, r, 'status', 'done')
+
+    return df
+
+
+
+#------------------------------------------------------------------------------
+# start the target api, check prev ovlapping, and update the timing accordingly 
+#------------------------------------------------------------------------------
+def MoveCurPos(df_all, r1):
+    df = df_all.copy(deep=True)
+
+    df_wake = df.loc[df.status == 'wake']
+    #print df_wake
+
+    wake_api_num = df_wake.shape[0]
+    #print wake_api_num
+
+    # get the range to check ovlp
+    begT = df_wake.current_pos.min()
+    endT = df_wake.pred_end.min()
+
+    midT = endT
+
+    # check any wake api start between the range
+    for index, row in df_wake.iterrows():
+        cur_start = row.start
+        if  begT < cur_start < endT:
+            midT = cur_start
+
+    #print midT
+
+    # check concurrency [begT,midT]
+    cc, cc_rows = Check_CC(df_wake, begT, midT)
+    print('from {} to {}, cc = {}'.format(begT, midT, cc))
+    print cc_rows
+
+    for r in cc_rows:
+        df = Update_row_by_cc(df, r, cc, [begT, midT])
+
+    return df
+
+
+
+#------------------------------------------------------------------------------
 # start next api 
 # todo: add cases for kernels
 #------------------------------------------------------------------------------
@@ -578,7 +690,6 @@ def StartNext_byType(df_all, row_list):
     r1_left_new = 0.0
     r1_bytesdone_new = 0.0
     r1_kb = 0.0
-
 
 
     # if r1 type is transfer call, we need to update the transfer status
@@ -614,7 +725,8 @@ def StartNext_byType(df_all, row_list):
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_left', r1_left_new)
         df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_bytesdone_new)
         if r1_left_new == 0.0:
-            # WARNING: use the org end time : if current call is done by the time r2 starts
+            # WARNING: use the org end time : 
+            # if current call is done by the time r2 starts
             df_all_api = UpdateCell(df_all_api, r1, 'current_pos', r1_end) 
             df_all_api = UpdateCell(df_all_api, r1, 'pred_end', r1_end)  # update
             df_all_api = UpdateCell(df_all_api, r1, 'bytes_done', r1_kb)
@@ -750,6 +862,23 @@ def Predict_transferOvlp(df_all, first, second, ways = 1.0):
     return df_all_api 
 
 
+def Predict_transferOvlp(df_all, row_list):
+    df_all_api = df_all.copy(deep=True)
+
+    cc = float(len(row_list))
+
+    for r1 in row_list:  # work on the target row 
+        cur_pos = df_all_api.loc[r1]['current_pos']
+
+        # check the bytes left and use bw to predict the end time
+        bw = df_all_api.loc[r1]['bw'] / cc
+        bytesleft = df_all_api.loc[r1]['bytes_left']
+        pred_time_left = bytesleft / bw
+        df_all_api = UpdateCell(df_all_api, r1, 'pred_end', cur_pos + pred_time_left)
+
+    return df_all_api 
+
+
 #------------------------------------------------------------------------------
 # Update using pred_end when there is no conflict. 
 #------------------------------------------------------------------------------
@@ -850,6 +979,16 @@ def CheckRowDone(df_all, r1, r2):
     if r1_status == 'done' or r2_status == 'done':
         next_iter = True
 
+    return next_iter
+
+
+def CheckRowDone(df_all, row_list):
+    next_iter = False
+    for r1 in row_list:
+        r1_status = df_all.loc[r1]['status']
+        if r1_status == 'done':
+            next_iter = True
+            break
     return next_iter
 
 
