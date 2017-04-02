@@ -1058,6 +1058,6 @@ def finish_call(df_all, row):
 
     # if it is transfer api 
     if my_type in ['h2d', 'd2h']:
-        UpdateCell()
+        df = UpdateCell(df)
 
 
