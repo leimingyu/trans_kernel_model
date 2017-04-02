@@ -1052,6 +1052,6 @@ def find_unique_streams(df_all_api):
 #------------------------------------------------------------------------------
 # Finish current call 
 #------------------------------------------------------------------------------
-def finish_api(df_all_api):
+def finish_call(df_all_api, row):
 
 
