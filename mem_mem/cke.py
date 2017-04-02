@@ -1058,7 +1058,10 @@ def finish_call(df_all, row):
 
     # if it is transfer api 
     if my_type in ['h2d', 'd2h']:
+        my_pred_end = GetInfo(df, row, 'pred_end')
         # use pred_end to update the end time
-        df = UpdateCell(df)
+        df = UpdateCell(df, row, 'end', my_pred_end)
+        # move current pos to the end time
+        df = UpdateCell(df, row, 'current_pos', my_pred_end)) 
 
 
