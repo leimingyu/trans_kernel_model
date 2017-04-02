@@ -1058,6 +1058,7 @@ def finish_call(df_all, row):
 
     # if it is transfer api 
     if my_type in ['h2d', 'd2h']:
+        # use pred_end to update the end time
         df = UpdateCell(df)
 
 
