@@ -1064,7 +1064,8 @@ def finish_call(df_all, row):
         df = UpdateCell(df, row, 'bytes_left', 0) 
 
     # use pred_end to update the end time
-    df = UpdateCell(df, row, 'end', my_pred_end)
+    #df = UpdateCell(df, row, 'end', my_pred_end)
+
     # move current pos to the end time
     df = UpdateCell(df, row, 'current_pos', my_pred_end) 
     df = UpdateCell(df, row, 'status', 'done') 
