@@ -587,10 +587,12 @@ def Update_row_by_cc(df_all, r, cc, timeRange):
     my_type   = df.loc[r]['api_type']
     my_curpos = df.loc[r]['current_pos']
     my_end    = df.loc[r]['end']
+    my_pred_end    = df.loc[r]['pred_end']
     my_kb     = df.loc[r]['size_kb']
 
     my_left_new = 0.0
     my_bytes_done_new = 0.0
+    my_left_time = 0.0
 
     if my_type in ['h2d', 'd2h']:
         my_bytes_left = df.loc[r]['bytes_left']
@@ -599,11 +601,15 @@ def Update_row_by_cc(df_all, r, cc, timeRange):
 
         bytes_tran = duration * my_bw
 
+        my_left_time = my_bytes_left / my_bw
+
         if my_bytes_left < 1e-3:
             sys.stderr.write('no bytes left')
         
         # calculate how many bytes left
         my_left_new = my_bytes_left - bytes_tran
+        print('row {}, end {}, my_curpos {}, my_pred_end {}, my_left_new {}'.format(r, my_end, my_curpos, my_pred_end, my_left_new))
+
         if my_left_new < 1e-3:
             my_left_new = 0.0
 
@@ -616,19 +622,46 @@ def Update_row_by_cc(df_all, r, cc, timeRange):
         df = UpdateCell(df, r, 'bytes_left', my_left_new)
         df = UpdateCell(df, r, 'bytes_done', my_bytes_done_new)
         if my_left_new == 0.0:
+            my_new_end =  my_curpos + my_left_time
+            #print('my_new_end {}'.format(my_new_end))
             # WARNING: use the org end time : 
             # if current call is done by the time minT starts
-            df= UpdateCell(df, r, 'current_pos', my_end) 
-            df= UpdateCell(df, r, 'pred_end', my_end)  # update
+            df= UpdateCell(df, r, 'current_pos', my_new_end) 
+            df= UpdateCell(df, r, 'pred_end', my_new_end)  # update
             df= UpdateCell(df, r, 'bytes_done', my_kb)
             df= UpdateCell(df, r, 'status', 'done')
 
     return df
 
 
+#------------------------------------------------------------------------------
+# Predict new end time based on the concurrency 
+#------------------------------------------------------------------------------
+def Adjust_pred(df_all, cc, cc_row_list):
+    df = df_all.copy(deep=True)
+    for rid in cc_row_list:
+        my_type = GetInfo(df, rid, 'api_type') 
+        my_curpos = GetInfo(df, rid, 'current_pos') 
+        if my_type in ['h2d', 'd2h']:
+            my_bw = GetInfo(df, rid, 'bw') 
+            my_bw = my_bw / cc
+
+            my_bytes_left = GetInfo(df, rid, 'bytes_left')
+            trans_time = my_bytes_left / my_bw
+            # new predicted end
+            my_new_end = my_curpos + trans_time
+            # update 
+            df= UpdateCell(df, rid, 'pred_end', my_new_end)
+
+    return df
+
 
 #------------------------------------------------------------------------------
-# start the target api, check prev ovlapping, and update the timing accordingly 
+# Start the target api, check prev ovlapping, and update the timing accordingly 
+#
+# WARNING: 
+# 1) if one call is done, the prediction using cc still happen on other call
+#    where we probably over-predict the ending time 
 #------------------------------------------------------------------------------
 def MoveCurPos(df_all, r1):
     df = df_all.copy(deep=True)
@@ -657,9 +690,31 @@ def MoveCurPos(df_all, r1):
     cc, cc_rows = Check_CC(df_wake, begT, midT)
     print('from {} to {}, cc = {}'.format(begT, midT, cc))
     print cc_rows
-
+    # predict based on current cc
     for r in cc_rows:
         df = Update_row_by_cc(df, r, cc, [begT, midT])
+
+    if midT < endT:
+        cc_new, cc_rows_new = Check_CC(df_wake, midT, endT)
+        print('from {} to {}, cc = {}'.format(midT, endT, cc_new))
+        print cc_rows_new
+
+        # when the concurrency changes: update the pred_end based on current cc
+        if cc_new <> cc:
+            df = Adjust_pred(df, cc_new, cc_rows_new)
+
+        # find out the new time range to predict
+        chk_start, chk_end = GetRangeFromWake(df)
+        print('new pred range from {} to {}'.format(chk_start, chk_end))
+
+        # update row during this range
+        for r in cc_rows:
+            df = Update_row_by_cc(df, r, cc_new, [chk_start, chk_end])
+
+
+    # check whether any api call has ended
+    # if so, update timing for all the calls in the stream 
+    df = UpdateStreamTime(df)
 
     return df
 
@@ -989,7 +1044,14 @@ def CheckRowDone(df_all, row_list):
         if r1_status == 'done':
             next_iter = True
             break
-    return next_iter
+
+    done_list = []
+    for r1 in row_list:
+        r1_status = df_all.loc[r1]['status']
+        if r1_status == 'done':
+           done_list.append(r1) 
+
+    return next_iter, done_list
 
 
 #------------------------------------------------------------------------------
@@ -1021,12 +1083,13 @@ def GetStartTime(df_all_api, r1):
 
 
 #------------------------------------------------------------------------------
-#  select two api calls to start prediction 
+#  
 #------------------------------------------------------------------------------
-def pick_first_sleep(df_all_api):
+def pick_first_call(df_all_api, mode = 'sleep'):
     df_all = df_all_api.copy(deep=True)
 
-    df_sleep = df_all.loc[df_all.status == 'sleep']
+    #df_sleep = df_all.loc[df_all.status == 'sleep']
+    df_sleep = df_all.loc[df_all.status == mode]
 
     count = 0
     target_rowid = 0
@@ -1039,6 +1102,28 @@ def pick_first_sleep(df_all_api):
 
     return df_all, int(target_rowid), target_stream 
 
+
+#------------------------------------------------------------------------------
+#  
+#------------------------------------------------------------------------------
+def pick_base_call(df_all):
+    df = df_all.copy(deep=True)
+    total_calls = df.shape[0]
+
+    df_sleep = df.loc[df.status == 'sleep']
+    df_wake  = df.loc[df.status == 'wake']
+    sleep_num = df_sleep.shape[0]
+
+    r1 , r1_stream = None, None
+
+    if sleep_num == total_calls: # all sleep
+        df, r1, r1_stream = pick_first_call(df, mode = 'sleep')
+
+    if not df_wake.empty:
+        df, r1, r1_stream = pick_first_call(df, mode = 'wake')
+        
+
+    return df, r1, r1_stream
 
 #------------------------------------------------------------------------------
 # find unique streams in the dataframe 
@@ -1071,3 +1156,5 @@ def finish_call(df_all, row):
     df = UpdateCell(df, row, 'status', 'done') 
 
     return df
+
+
