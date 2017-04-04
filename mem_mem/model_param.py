@@ -269,3 +269,14 @@ def GetStreamID(df_all, r1):
 #------------------------------------------------------------------------------
 def GetInfo(df_all, row, column):
     return df_all.loc[row][column]
+
+
+#------------------------------------------------------------------------------
+# Get the time range to check concurrency 
+#------------------------------------------------------------------------------
+def GetRangeFromWake(df_all_api):
+    df_wake = df_all_api.loc[df_all_api.status == 'wake']
+    startT = df_wake.current_pos.min()
+    endT = df_wake.pred_end.min()
+    return startT, endT
+
