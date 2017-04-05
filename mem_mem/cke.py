@@ -730,10 +730,11 @@ def start_next_call(df_all):
 
     else
         # pick the 1st one in sleep
+        row_id = Pick_first_in_sleep(df)
+        SetWake(df, row_id)
+        
 
-
-
-    return df
+    return df, row_id
 
 #------------------------------------------------------------------------------
 # start next api 
