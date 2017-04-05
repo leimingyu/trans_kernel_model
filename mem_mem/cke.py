@@ -721,10 +721,15 @@ def MoveCurPos(df_all, r1):
 
 #------------------------------------------------------------------------------
 # start next api 
-# todo: add cases for kernels
 #------------------------------------------------------------------------------
 def start_next_call(df_all):
     df = df_all.copy(deep=True)
+    df_sleep = df.loc[df.status == 'sleep']
+    
+    if df_sleep.empty():
+
+    else
+        # pick the 1st one in sleep
 
 
 
