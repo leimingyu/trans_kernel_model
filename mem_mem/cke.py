@@ -729,7 +729,7 @@ def start_next_call(df_all):
     row_id = None
     row_stream = None
 
-    if not df_sleep.empty():
+    if df_sleep.shape[0] > 0:
         # pick the 1st one in sleep
         row_id     = Pick_first_in_sleep(df)
         df         = SetWake(df, row_id)
