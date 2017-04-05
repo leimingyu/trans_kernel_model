@@ -726,15 +726,14 @@ def start_next_call(df_all):
     df = df_all.copy(deep=True)
     df_sleep = df.loc[df.status == 'sleep']
     
-    if df_sleep.empty():
+    row_id = None
 
-    else
+    if not df_sleep.empty():
         # pick the 1st one in sleep
         row_id = Pick_first_in_sleep(df)
-        SetWake(df, row_id)
-        
+        df = SetWake(df, row_id)
 
-    return df, row_id
+    return df, row_id, row_stream
 
 #------------------------------------------------------------------------------
 # start next api 
