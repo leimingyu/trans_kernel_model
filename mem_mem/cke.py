@@ -727,11 +727,13 @@ def start_next_call(df_all):
     df_sleep = df.loc[df.status == 'sleep']
     
     row_id = None
+    row_stream = None
 
     if not df_sleep.empty():
         # pick the 1st one in sleep
         row_id = Pick_first_in_sleep(df)
         df = SetWake(df, row_id)
+        row_stream = GetInfo(df, row_id, 'stream_id')
 
     return df, row_id, row_stream
 
