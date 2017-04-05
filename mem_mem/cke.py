@@ -1088,7 +1088,6 @@ def GetStartTime(df_all_api, r1):
 def pick_first_call(df_all_api, mode = 'sleep'):
     df_all = df_all_api.copy(deep=True)
 
-    #df_sleep = df_all.loc[df_all.status == 'sleep']
     df_sleep = df_all.loc[df_all.status == mode]
 
     count = 0
@@ -1104,7 +1103,7 @@ def pick_first_call(df_all_api, mode = 'sleep'):
 
 
 #------------------------------------------------------------------------------
-#  
+# pick an api to start 
 #------------------------------------------------------------------------------
 def pick_base_call(df_all):
     df = df_all.copy(deep=True)
@@ -1121,7 +1120,6 @@ def pick_base_call(df_all):
 
     if not df_wake.empty:
         df, r1, r1_stream = pick_first_call(df, mode = 'wake')
-        
 
     return df, r1, r1_stream
 
