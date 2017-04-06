@@ -152,7 +152,11 @@ def Finish_row_h2d(df_all, row, ways = 1.0):
     cc = float(ways)
     trans_time = Compute_left_time(df, row, ways = cc)
 
-    df = UpdateCell(df, row, 'bytes_done', ) 
+    tot_size = GetInfo(df, row, 'size_kb')
+
+    # update info
+    df = UpdateCell(df, row, 'bytes_done', tot_size) 
+    df = UpdateCell(df, row, 'bytes_left', 0) 
 
             df_all_api.set_value(index,'bytes_done', tot_size)
             df_all_api.set_value(index,'bytes_left', 0)
