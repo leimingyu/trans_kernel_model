@@ -872,6 +872,8 @@ def end_target_row(df_all, row2nd, simT, curT):
 
         # finish current row and update the pred time
         df = Finish_row_h2d(df, row2nd, simT, cc)
+        # if an api is done, update the timing for the stream 
+        df_all_api = UpdateStreamTime(df_all_api)
 
 
     if mytype == 'd2h':
