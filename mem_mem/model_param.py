@@ -146,21 +146,19 @@ def Compute_left_time(df_all, row, ways = 1.0):
 #------------------------------------------------------------------------------
 # Finish the target row 
 #------------------------------------------------------------------------------
-def Finish_row_h2d(df_all, row, ways = 1.0):
+def Finish_row_h2d(df_all, row, simT, ways = 1.0):
     df = df_all.copy(deep=True)
-
     cc = float(ways)
     trans_time = Compute_left_time(df, row, ways = cc)
-    
-
+    new_end = simT + trans_time # new pred end
     tot_size = GetInfo(df, row, 'size_kb')
-
     # update info
     df = UpdateCell(df, row, 'bytes_done', tot_size) 
     df = UpdateCell(df, row, 'bytes_left', 0) 
+    df = UpdateCell(df, row, 'current_pos', new_end) 
+    df = UpdateCell(df, row, 'pred_end', new_end) 
 
 
-    df_all_api.set_value(index,'current_pos', endT)
     df_all_api.set_value(index,'time_left', 0) # no time_left
     df_all_api.set_value(index,'current_pos', row.pred_end)
     df_all_api.set_value(index,'status', 'done')
