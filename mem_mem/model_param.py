@@ -90,15 +90,104 @@ def UpdateCell(df_all_api, row_id, col_name, val):
 #------------------------------------------------------------------------------
 def SetWake(df_all, r1):
     df= df_all.copy(deep=True)
-
     df= UpdateCell(df, r1, 'status', 'wake')
-
     # also update the current and pred end
     df = UpdateCell(df, r1, 'current_pos', get_rowinfo(df, r1)['start'])
     df = UpdateCell(df, r1, 'pred_end', get_rowinfo(df, r1)['end'])
+    return df
+
+
+#------------------------------------------------------------------------------
+# Set the target row to be wake status, return stream id
+#------------------------------------------------------------------------------
+def GetWakeListByTime(df_all, begT, endT):
+    df= df_all.copy(deep=True)
+    df_wake = df.loc[df.status == 'wake']
+    wake_list = []
+    for index, row in df_wake.iterrows():
+        if row.pred_end >= endT and row.start <= begT:
+            wake_list.append(index)
+    return wake_list
+
+
+def GetWakeListBefore(df_all, endT):
+    df= df_all.copy(deep=True)
+    df_wake = df.loc[df.status == 'wake']
+
+    wake_list = []
+    for index, row in df_wake.iterrows():
+        if row.pred_end >= endT and row.start <= begT:
+            wake_list.append(index)
+    return wake_list
+
+#------------------------------------------------------------------------------
+# Set the target row to be wake status, return stream id
+#------------------------------------------------------------------------------
+def FindOvlp(df_all, wakelist):
+    df= df_all.copy(deep=True)
+    h2d_list, d2h_list, kern_list = [],[],[]
+    for row in wakelist:
+        api_type = GetInfo(df, row, 'api_type')
+        if api_type == 'h2d':  h2d_list.append(row)
+        if api_type == 'd2h':  d2h_list.append(row)
+        if api_type == 'kern': kern_list.append(row)
+
+    return h2d_list, d2h_list, kern_list
+
+
+#------------------------------------------------------------------------------
+# update h2d api by the concurrency 
+#------------------------------------------------------------------------------
+def Update_h2d_bytes(df_all, row, startT, endT, ways = 1.0):
+    df = df_all.copy(deep=True)
+    cc = float(ways)
+
+    bw = GetInfo(df, row, 'bw')
+    bw = bw / cc 
+
+    dur = endT - startT
+
+    bytes_done = GetInfo(df, row, 'bytes_done') 
+    bytes_left = GetInfo(df, row, 'bytes_left') 
+
+    # compute bytes left
+    bytes_tran = dur * bw 
+    bytes_left_new = bytes_left - bytes_tran
+    bytes_done_new = bytes_done + bytes_tran
+
+    df = UpdateCell(df, row, 'bytes_done', bytes_done_new)
+    df = UpdateCell(df, row, 'bytes_left', bytes_left_new)
+    #df = UpdateCell(df, row, 'current_pos', endT)
+
+    ## check whether ended
+    #done = True if bytes_left_new <= 1e-3 else False 
+
+    #if done:
+    #    print('row to be done: row {}'.format(row))
+    #else:
+         
 
     return df
 
+
+#------------------------------------------------------------------------------
+# Find previous api call in the same stream 
+#------------------------------------------------------------------------------
+def Find_prevapi_samestream(df_all, r2, r2_stream):
+    df = df_all.copy(deep=True)
+
+    df_wake = df.loc[(df.status == 'wake') & (df.stream_id == r2_stream)]
+
+    prev_call_list = []
+
+    for index, _ in df_wake.iterrows():
+        if index <> r2:
+            prev_call_list.append(index) 
+
+    if len(prev_call_list) <> 1:
+        sys.stderr.write('something is wrong. check prev api call.') 
+
+    return prev_call_list[0]
 
 
 #------------------------------------------------------------------------------
