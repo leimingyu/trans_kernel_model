@@ -726,8 +726,8 @@ def MoveCurPos(df_all, r1):
 #------------------------------------------------------------------------------
 def start_next_call(df_all):
     df = df_all.copy(deep=True)
-    #df_sleep = df.loc[df.status == 'sleep']
-    df_nodone = df.loc[df.status <> 'done']
+    df_sleep = df.loc[df.status == 'sleep']
+    #df_nodone = df.loc[df.status <> 'done']
     
     row_id = None
     row_stream = None
