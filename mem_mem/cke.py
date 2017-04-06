@@ -856,18 +856,19 @@ def update_by_range(df_all, begT, endT):
 #------------------------------------------------------------------------------
 # finish the target row and update the timing 
 #------------------------------------------------------------------------------
-def end_target_row(df_all, row, simT, curT):
+def end_target_row(df_all, row2nd, simT, curT):
     df = df_all.copy(deep=True)
 
     wake_list = GetWakeListBefore(df, curT)
     print('wake list {} '.format(wake_list))
 
-    mytype = GetInfo(df, row, 'api_type')
+    mytype = GetInfo(df, row2nd, 'api_type')
 
     if mytype == 'h2d':
         # how many h2d ovlp
         h2d_list, _, _ = FindOvlp(df, wake_list)
         cc = len(h2d_list)
+
         #print cc
 
 
