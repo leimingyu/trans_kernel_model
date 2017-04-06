@@ -722,10 +722,12 @@ def MoveCurPos(df_all, r1):
 
 #------------------------------------------------------------------------------
 # start next api 
+# 1) if in sleep, wake it up  2) if active, directly return
 #------------------------------------------------------------------------------
 def start_next_call(df_all):
     df = df_all.copy(deep=True)
-    df_sleep = df.loc[df.status == 'sleep']
+    #df_sleep = df.loc[df.status == 'sleep']
+    df_nodone = df.loc[df.status <> 'done']
     
     row_id = None
     row_stream = None
