@@ -138,17 +138,10 @@ def FindOvlp(df_all, wakelist):
 # Finish the target row 
 #------------------------------------------------------------------------------
 def Finish_row_h2d(df_all, row, ways = 1.0):
-    df_all_api = df_all.copy(deep=True)
-    df_wake = df_all_api.loc[df_all_api.status == 'wake'] # wake apis
+    df = df_all.copy(deep=True)
 
-    startT = timeRange[0]
-    endT = timeRange[1]
-    dur = endT - startT
+    bytes_left = GetInfo(df, row, 'bytes_left')
 
-    cc = ways
-
-    # iterate through each row to update the pred_end
-    for index, row in df_wake.iterrows():
         bw = row.bw / cc
         bytes_tran = dur * bw 
         bytes_don = row.bytes_done
