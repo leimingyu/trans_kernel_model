@@ -854,26 +854,68 @@ def update_by_range(df_all, begT, endT):
 
 
 #------------------------------------------------------------------------------
+# Move wake calls to the coming api start: no ovlp during the rangeT
+#------------------------------------------------------------------------------
+def move_wake_for_coming_call(df_all, preEndT, curStartT):
+    df = df_all.copy(deep=True)
+    wake_list = GetWakeListBefore(df, preEndT)
+    print('move_wake_for_coming_call, wake list {} '.format(wake_list))
+    #
+    #
+    dur = curStartT - preEndT
+
+    for wake_row in wake_list:
+        wake_row_api = GetInfo(df, wake_row, 'api_type')
+        if wake_row_api in ['h2d', 'd2h']:
+            bw = GetInfo(df, wake_row, 'bw')
+            bytes_left = GetInfo(df, wake_row, 'bytes_left')
+            bytes_done = GetInfo(df, wake_row, 'bytes_done')
+            trans_bytes = dur * bw
+            bytes_left_new = bytes_left - trans_bytes
+            bytes_done_new = bytes_done + trans_bytes
+            #
+            # no need to update pred_end, since Update_row_h2d assume on ovlp
+            df = UpdateCell(df, wake_row, 'bytes_left',  bytes_left_new)
+            df = UpdateCell(df, wake_row, 'bytes_done',  bytes_done_new)
+            df = UpdateCell(df, wake_row, 'current_pos', curStartT)
+
+
+    return df
+
+#------------------------------------------------------------------------------
 # finish the target row and update the timing 
 #------------------------------------------------------------------------------
 def end_target_row(df_all, row2nd, simT, curT):
     df = df_all.copy(deep=True)
-
+    #
+    # find wake apis before curT
     wake_list = GetWakeListBefore(df, curT)
     print('wake list {} '.format(wake_list))
-
+    #
+    # check row2nd api type
     mytype = GetInfo(df, row2nd, 'api_type')
 
     if mytype == 'h2d':
-        # how many h2d ovlp
+        #
+        # how many h2d ovlp during the interval
         h2d_list, _, _ = FindOvlp(df, wake_list)
         cc = len(h2d_list)
         print cc
-
+        #
         # finish current row and update the pred time
-        df = Finish_row_h2d(df, row2nd, simT, cc)
+        df = Finish_row_h2d(df, row2nd, simT, ways = cc)
+        #
         # if an api is done, update the timing for the stream 
-        df_all_api = UpdateStreamTime(df_all_api)
+        df = UpdateStreamTime(df)
+
+        pred_end = GetInfo(df, row2nd, 'pred_end') 
+
+        if cc > 1.0:
+            # update the time for other stream
+            for x in h2d_list:
+                if x <> row2nd:
+                    # update bytes_left and bytes_done
+                    df = Update_row_h2d(df, x, simT, pred_end, ways = cc)
 
 
     if mytype == 'd2h':
