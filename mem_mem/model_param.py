@@ -140,7 +140,12 @@ def FindOvlp(df_all, wakelist):
 def Finish_row_h2d(df_all, row, ways = 1.0):
     df = df_all.copy(deep=True)
 
+    cc = float(ways)
+
     bytes_left = GetInfo(df, row, 'bytes_left')
+    bw = GetInfo(df, row, 'bw')
+    bw = bw / cc 
+    trans_time =  bytes_left / bw
 
         bw = row.bw / cc
         bytes_tran = dur * bw 
