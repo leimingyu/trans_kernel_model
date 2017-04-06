@@ -435,4 +435,4 @@ def GetRangeFromWake(df_all_api):
 #------------------------------------------------------------------------------
 def Dump_dd(dd):
     for key, value in dd.items():
-        print('key {} : value {}', key, value)
+        print('key {} : value {}'.format(key, value))
