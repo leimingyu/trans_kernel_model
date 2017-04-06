@@ -868,10 +868,10 @@ def end_target_row(df_all, row2nd, simT, curT):
         # how many h2d ovlp
         h2d_list, _, _ = FindOvlp(df, wake_list)
         cc = len(h2d_list)
-        #print cc
+        print cc
 
         # finish current row and update the pred time
-        Finish_row_h2d(df, row2nd, simT, cc)
+        df = Finish_row_h2d(df, row2nd, simT, cc)
 
 
     if mytype == 'd2h':
