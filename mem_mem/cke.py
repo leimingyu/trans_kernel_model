@@ -417,8 +417,9 @@ def UpdateStreamTime(df_all_api):
 
                 # update the dataframe record
                 #print index
-                df_all.set_value(index, 'start', new_start)
-                df_all.set_value(index, 'end', new_end)
+                df_all.set_value(index, 'start',    new_start)
+                df_all.set_value(index, 'end',      new_end)
+                df_all.set_value(index, 'pred_end', new_end)
 
 
             # update the count for current iter
