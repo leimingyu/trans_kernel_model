@@ -163,6 +163,38 @@ def Finish_row_h2d(df_all, row, simT, ways = 1.0):
     return df
 
 
+#------------------------------------------------------------------------------
+# simT to predendT, there is cc, after that cc = 1.0 
+#------------------------------------------------------------------------------
+def Update_row_h2d(df_all, row, simT, predendT, ways = 1.0):
+    df = df_all.copy(deep=True)
+    cc = float(ways)
+
+    bw_org = GetInfo(df, row, 'bw')
+    bw = bw_org / cc 
+
+    bytes_left = GetInfo(df, row, 'bytes_left')
+    bytes_done = GetInfo(df, row, 'bytes_done')
+
+    bytes_transfer =  (predendT - simT) * bw
+
+    bytes_left_new =  bytes_left  - bytes_transfer
+    bytes_done_new =  bytes_left  + bytes_transfer
+
+
+    time_left_no_ovlp = bytes_left_new / bw_org
+    # predendT with cc + time left (transfer with org bw)
+    pred_end_new =  predendT + time_left_no_ovlp
+
+    # update info
+    df = UpdateCell(df, row, 'bytes_done', bytes_done_new) 
+    df = UpdateCell(df, row, 'bytes_left', bytes_left_new) 
+    df = UpdateCell(df, row, 'current_pos', simT) 
+    df = UpdateCell(df, row, 'pred_end', pred_end_new) 
+
+    
+    return df
+
 
 
 #------------------------------------------------------------------------------
