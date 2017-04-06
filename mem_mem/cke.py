@@ -813,6 +813,76 @@ def StartNext_byType(df_all, row_list):
 
 
 #------------------------------------------------------------------------------
+# update time between an interval  
+#------------------------------------------------------------------------------
+def update_by_range(df_all, begT, endT):
+    df = df_all.copy(deep=True)
+
+    # find out the wake api during the range
+    wake_list = GetWakeListByTime(df, begT, endT)
+    print('wake list {} '.format(wake_list))
+
+    # no wake api
+    if not wake_list:
+        return df
+    
+    # how many h2d ovlp
+    h2d_list, d2h_list, kern_list = FindOvlp(df, wake_list)
+    print h2d_list
+    print d2h_list
+    print kern_list
+
+    # check whether there is h2d ovlp
+    if h2d_list:
+        cc = len(h2d_list)
+        for r in h2d_list: 
+            df = Update_h2d_bytes(df, r, begT, endT, ways = cc)
+        # check any h2d call
+
+    # check whether there is d2h ovlp
+    if d2h_list:
+        pass
+
+    # check whether there is kern ovlp
+    if kern_list:
+        pass
+
+    #for rowid in wake_list:
+
+
+    return df
+
+
+#------------------------------------------------------------------------------
+# finish the target row and update the timing 
+#------------------------------------------------------------------------------
+def end_target_row(df_all, row, simT, curT):
+    df = df_all.copy(deep=True)
+    wake_list = GetWakeListBefore(df, curT)
+    print('wake list {} '.format(wake_list))
+
+    mytype = GetInfo(df, row, 'api_type')
+
+    if mytype == 'h2d':
+        # how many h2d ovlp
+        h2d_list, _, _ = FindOvlp(df, wake_list)
+        cc = len(h2d_list)
+
+    if mytype == 'd2h':
+        sys.stderr.write('end_target_row, d2h not implemented')
+        pass
+
+
+    if mytype == 'kern':
+        sys.stderr.write('end_target_row, kern not implemented')
+        pass
+
+
+
+    return df
+
+
+#------------------------------------------------------------------------------
 # check concurrency using current_pos
 #------------------------------------------------------------------------------
 def Predict_checkCC(df_all, first, second):
