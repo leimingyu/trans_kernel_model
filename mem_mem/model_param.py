@@ -151,6 +151,7 @@ def Finish_row_h2d(df_all, row, ways = 1.0):
 
     cc = float(ways)
     trans_time = Compute_left_time(df, row, ways = cc)
+    
 
     tot_size = GetInfo(df, row, 'size_kb')
 
@@ -158,20 +159,13 @@ def Finish_row_h2d(df_all, row, ways = 1.0):
     df = UpdateCell(df, row, 'bytes_done', tot_size) 
     df = UpdateCell(df, row, 'bytes_left', 0) 
 
-            df_all_api.set_value(index,'bytes_done', tot_size)
-            df_all_api.set_value(index,'bytes_left', 0)
-            df_all_api.set_value(index,'time_left', 0) # no time_left
-            df_all_api.set_value(index,'current_pos', row.pred_end)
-            df_all_api.set_value(index,'status', 'done')
-        else:
-            # deduct the bytes, update teh current pos
-            df_all_api.set_value(index,'bytes_done', bytes_don + bytes_tran)
-            df_all_api.set_value(index,'bytes_left', bytes_lft - bytes_tran)
-            df_all_api.set_value(index,'current_pos', endT)
-            df_all_api.set_value(index,'time_left', 0) # clear
-            df_all_api.set_value(index,'pred_end', 0) # clear
 
-    return df_all_api 
+    df_all_api.set_value(index,'current_pos', endT)
+    df_all_api.set_value(index,'time_left', 0) # no time_left
+    df_all_api.set_value(index,'current_pos', row.pred_end)
+    df_all_api.set_value(index,'status', 'done')
+
+    return df
 
 
 
