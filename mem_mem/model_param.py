@@ -137,7 +137,11 @@ def FindOvlp(df_all, wakelist):
 #------------------------------------------------------------------------------
 # Compute_bytesleft_time
 #------------------------------------------------------------------------------
-def Finish_row_h2d(df_all, row, ways = 1.0):
+def Compute_left_time(df_all, row, ways = 1.0):
+    bytes_left = GetInfo(df, row, 'bytes_left')
+    bw = GetInfo(df, row, 'bw')
+    bw = bw / cc 
+    trans_time =  bytes_left / bw
 
 #------------------------------------------------------------------------------
 # Finish the target row 
@@ -146,11 +150,8 @@ def Finish_row_h2d(df_all, row, ways = 1.0):
     df = df_all.copy(deep=True)
 
     cc = float(ways)
+    trans_time = Compute_left_time(df, row, ways = cc)
 
-    bytes_left = GetInfo(df, row, 'bytes_left')
-    bw = GetInfo(df, row, 'bw')
-    bw = bw / cc 
-    trans_time =  bytes_left / bw
 
         bw = row.bw / cc
         bytes_tran = dur * bw 
