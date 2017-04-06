@@ -871,6 +871,7 @@ def end_target_row(df_all, row2nd, simT, curT):
         #print cc
 
         # finish current row and update the pred time
+        Finish_row(df, df, cc)
 
 
     if mytype == 'd2h':
