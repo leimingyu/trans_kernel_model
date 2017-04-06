@@ -116,7 +116,7 @@ def GetWakeListBefore(df_all, endT):
 
     wake_list = []
     for index, row in df_wake.iterrows():
-        if row.pred_end >= endT and row.start <= begT:
+        if row.start < endT:
             wake_list.append(index)
     return wake_list
 
