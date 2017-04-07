@@ -931,6 +931,10 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # move to row2end_end to nextcall_start
     df = move_wake_for_coming_call(df, row2end_predend, nextCall_start)
 
+    #
+    # since row2nd is done, we need remove it from activestream pool
+    activestream_dd[row2end_stream]
+
     return df
 
 #------------------------------------------------------------------------------
