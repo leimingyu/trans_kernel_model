@@ -903,7 +903,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     print df_sorted
 
     row2end = df_sorted.iloc[0].name
-    row2end_stream = df_sorted.iloc[0].name
+    row2end_stream = df_sorted.iloc[0]['stream_id']
     print row2end
     #print type(row2end)
 
