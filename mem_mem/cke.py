@@ -919,9 +919,9 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # 
     # move current_pos to row2nd pred_end
     row2end_predend = GetInfo(df, row2end, 'pred_end')
-    for wake_call in wake_list:
-        if wake_call <> row2end:
-            df = UpdateCell(df, )
+    for wake_row in wake_list:
+        if wake_row <> row2end:
+            df = UpdateCell(df, wake_row, 'current_pos', row2end_predend)
 
 
     #row2end_end
