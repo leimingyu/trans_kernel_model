@@ -724,18 +724,40 @@ def MoveCurPos(df_all, r1):
 # start next api 
 # 1) if in sleep, wake it up  2) if active, directly return
 #------------------------------------------------------------------------------
-def start_next_call(df_all):
+def start_next_call(df_all, prev_row):
     df = df_all.copy(deep=True)
-    df_sleep = df.loc[df.status == 'sleep']
-    #df_nodone = df.loc[df.status <> 'done']
-    
+
     row_id = None
     row_stream = None
 
-    if df_sleep.shape[0] > 0:
-        # pick the 1st one in sleep
-        row_id     = Pick_first_in_sleep(df)
+    #df_sleep = df.loc[df.status == 'sleep']
+
+    #if df_sleep.shape[0] > 0:
+    #    # pick the 1st one in sleep
+    #    row_id     = Pick_first_in_sleep(df)
+    #    df         = SetWake(df, row_id)
+    #    row_stream = GetInfo(df, row_id, 'stream_id')
+
+
+    df_nodone = df.loc[df.status <> 'done']
+
+    found_prev = False
+    for index, row in df_nodone.iterrows():
+        if found_prev:
+            row_id = index # the row after prev_row
+            break
+
+        if index == prev_row:
+            found_prev = True
+
+
+    my_status = GetInfo(df, row_id, 'status')
+
+    if my_status == 'sleep':
         df         = SetWake(df, row_id)
+        row_stream = GetInfo(df, row_id, 'stream_id')
+
+    if my_status == 'wake':
         row_stream = GetInfo(df, row_id, 'stream_id')
 
     return df, row_id, row_stream
@@ -838,6 +860,7 @@ def update_by_range(df_all, begT, endT):
     # check whether there is h2d ovlp
     if h2d_list:
         cc = len(h2d_list)
+        print('cc {} for all the wake list'.format(cc))
         for r in h2d_list: 
             df = Update_h2d_bytes(df, r, begT, endT, ways = cc)
         # check any h2d call
@@ -855,6 +878,50 @@ def update_by_range(df_all, begT, endT):
 
     return df
 
+#------------------------------------------------------------------------------
+# check active stream dd and terminate an api that ends soon
+#------------------------------------------------------------------------------
+def check_activestream_and_update(df_all, activestream_dd, simPos):
+    df = df_all.copy(deep=True)
+
+    full = True
+    for key, value in activestream_dd.items():
+        if value == None:
+            full = False 
+            break
+
+    if not full:
+        return df
+
+    # find out which call to terminate
+    df_wake = df.loc[df.status == 'wake']
+    wake_list = FindWakeList(df_wake) 
+    print(wake_list)
+
+    # sort
+    df_sorted = df_wake.sort_values(['pred_end'],ascending = True)
+    print df_sorted
+
+    row2end = df_sorted.iloc[0].name
+    row2end_stream = df_sorted.iloc[0].name
+    print row2end
+    #print type(row2end)
+
+
+    #
+    # end the target row, update the bytes for other call
+    #df_all_api = end_target_row(df_all_api, row_2nd, simPos, nextCall_start)
+
+    ## how many h2d ovlp
+    #h2d_list, d2h_list, kern_list = FindOvlp(df, wake_list)
+    #print h2d_list
+    #print d2h_list
+    #print kern_list
+
+
+
+
+    return df
 
 #------------------------------------------------------------------------------
 # Move wake calls to the coming api start: no ovlp during the rangeT
