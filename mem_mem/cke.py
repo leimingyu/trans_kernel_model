@@ -924,8 +924,8 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
             df = UpdateCell(df, wake_row, 'current_pos', row2end_predend)
 
     #
-    #row2end_end
-    df_all_api = cke.move_wake_for_coming_call(df_all_api, row2nd_end, curPos)
+    # move to row2end_end to nextcall_start
+    df = move_wake_for_coming_call(df, row2nd_predend, nextCall_start)
 
 
 
