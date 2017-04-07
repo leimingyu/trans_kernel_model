@@ -900,11 +900,11 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
 
     # sort
     df_sorted = df_wake.sort_values(['pred_end'],ascending = True)
-    print df_sorted
+    #print df_sorted
 
     row2end = df_sorted.iloc[0].name
     row2end_stream = df_sorted.iloc[0]['stream_id']
-    print row2end
+    print('row to end : {}, its stream {}'.format(row2end, row2end_stream))
     #print type(row2end)
 
 
