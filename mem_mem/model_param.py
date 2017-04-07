@@ -146,6 +146,18 @@ def FindWakeList(df_all):
     return wake_list 
 
 #------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def Find_nextcall_samestream() 
+    df= df_all.copy(deep=True)
+    df_wake = df.loc[df.status == 'wake']
+    wake_list = [] 
+    for index, row in df_wake.iterrows():
+        wake_list.append(index)
+    return wake_list 
+
+
+#------------------------------------------------------------------------------
 # Compute_bytesleft_time
 #------------------------------------------------------------------------------
 def Compute_left_time(df, row, ways = 1.0):
