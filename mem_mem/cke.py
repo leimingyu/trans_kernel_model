@@ -854,9 +854,9 @@ def update_by_range(df_all, begT, endT):
     
     # how many h2d ovlp
     h2d_list, d2h_list, kern_list = FindOvlp(df, wake_list)
-    print h2d_list
-    print d2h_list
-    print kern_list
+    print ('h2d_list : {}'.format(h2d_list))
+    print ('d2h_list : {}'.format(d2h_list))
+    print ('kern_list : {}'.format(kern_list))
 
     # check whether there is h2d ovlp
     if h2d_list:
@@ -872,6 +872,12 @@ def update_by_range(df_all, begT, endT):
 
     # check whether there is kern ovlp
     if kern_list:
+        """
+        case 1) there is one kernel, register in the gpu trace table
+        case 2) if there are more, add them by the kernel starting time, to the
+        gpu SM strace table
+        """
+        sys.stderr.write('kernel model no accomplished yet!')
         pass
 
     #for rowid in wake_list:
@@ -915,6 +921,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # find out the next call after row2nd
     row_afterprevcall = Find_nextcall_samestream(df, row2end, row2end_stream)
     nextCall_start = GetInfo(df, row_afterprevcall, 'start')
+    print('next call after : {}'.format(row_afterprevcall))
 
     #
     # end the target row, update the bytes for other call
