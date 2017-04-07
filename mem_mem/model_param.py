@@ -148,7 +148,7 @@ def FindWakeList(df_all):
 #------------------------------------------------------------------------------
 # 
 #------------------------------------------------------------------------------
-def Find_nextcall_samestream(df_all, row2nd, row2nd_stream) 
+def Find_nextcall_samestream(df_all, row2nd, row2nd_stream): 
     df= df_all.copy(deep=True)
 
     df_stream = df.loc[df.stream_id == row2nd_stream]
@@ -158,9 +158,9 @@ def Find_nextcall_samestream(df_all, row2nd, row2nd_stream)
     for index, row in df_stream.iterrows():
         if Next:
             row = index
+            break
         if index == row2nd:
             Next = True
-
     return row 
 
 
