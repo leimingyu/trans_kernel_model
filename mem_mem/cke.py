@@ -910,12 +910,11 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     #
     # find out the next call after row2nd
     row_afterprevcall = Find_nextcall_samestream(df, row2end, row2end_stream)
-    print row_afterprevcall
-
+    nextCall_start = GetInfo(df, row_afterprevcall, 'start')
 
     #
     # end the target row, update the bytes for other call
-    #df_all_api = end_target_row(df_all_api, row_2nd, simPos, nextCall_start)
+    df = end_target_row(df, row_2nd, simPos, nextCall_start)
 
     ## how many h2d ovlp
     #h2d_list, d2h_list, kern_list = FindOvlp(df, wake_list)
