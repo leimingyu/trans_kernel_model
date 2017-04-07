@@ -910,6 +910,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     #
     # find out the next call after row2nd
     row_afterprevcall = Find_nextcall_samestream(df, row2nd, row2end_stream)
+    print row_afterprevcall
 
 
     #
