@@ -153,10 +153,15 @@ def Find_nextcall_samestream(df_all, row2nd, row2nd_stream)
 
     df_stream = df.loc[df.stream_id == row2nd_stream]
 
-    wake_list = [] 
-    for index, row in df_wake.iterrows():
-        wake_list.append(index)
-    return wake_list 
+    Next = False
+    row = None
+    for index, row in df_stream.iterrows():
+        if Next:
+            row = index
+        if index == row2nd:
+            Next = True
+
+    return row 
 
 
 #------------------------------------------------------------------------------
