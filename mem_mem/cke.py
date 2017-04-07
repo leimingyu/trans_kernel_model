@@ -4,6 +4,7 @@ from math import *
 import sys
 
 from model_param import *
+import copy 
 
 
 #------------------------------------------------------------------------------
@@ -884,6 +885,8 @@ def update_by_range(df_all, begT, endT):
 def check_activestream_and_update(df_all, activestream_dd, simPos):
     df = df_all.copy(deep=True)
 
+    as_dd = copy.deepcopy(activestream_dd) 
+
     full = True
     for key, value in activestream_dd.items():
         if value == None:
@@ -891,8 +894,9 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
             break
 
     if not full:
-        return df
+        return df, as_dd, simPos
 
+    #--------------------------------------------------------------------------
     # find out which call to terminate
     df_wake = df.loc[df.status == 'wake']
     wake_list = FindWakeList(df_wake) 
@@ -933,9 +937,17 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
 
     #
     # since row2nd is done, we need remove it from activestream pool
-    activestream_dd[row2end_stream]
+    #row2end_stream = int(row2end_stream)
+    #print as_dd[row2end_stream] 
 
-    return df
+    as_dd[row2end_stream] = None
+    #print as_dd
+
+    #
+    # simulation postion  = nextCall_start
+    simPos = nextCall_start
+
+    return df, as_dd, simPos
 
 #------------------------------------------------------------------------------
 # Move wake calls to the coming api start: no ovlp during the rangeT
