@@ -135,6 +135,17 @@ def FindOvlp(df_all, wakelist):
 
 
 #------------------------------------------------------------------------------
+# Find wake list in the dataframe 
+#------------------------------------------------------------------------------
+def FindWakeList(df_all):
+    df= df_all.copy(deep=True)
+    df_wake = df.loc[df.status == 'wake']
+    wake_list = [] 
+    for index, row in df_wake.iterrows():
+        wake_list.append(index)
+    return wake_list 
+
+#------------------------------------------------------------------------------
 # Compute_bytesleft_time
 #------------------------------------------------------------------------------
 def Compute_left_time(df, row, ways = 1.0):
@@ -435,4 +446,4 @@ def GetRangeFromWake(df_all_api):
 #------------------------------------------------------------------------------
 def Dump_dd(dd):
     for key, value in dd.items():
-        print('key {} : value {}'.format(key, value))
+        print('stream {} : active_api {}'.format(key, value))
