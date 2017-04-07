@@ -916,7 +916,10 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # end the target row, update the bytes for other call
     df = end_target_row(df, row2end, simPos, nextCall_start)
 
-    row2end_end
+    #row2nd_pred
+
+
+    #row2end_end
 
 
 
