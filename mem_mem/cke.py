@@ -916,6 +916,10 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # end the target row, update the bytes for other call
     df = end_target_row(df, row2end, simPos, nextCall_start)
 
+    #
+    # the start has been shifted right
+    nextCall_start = GetInfo(df, row_afterprevcall, 'start')
+
     # 
     # move current_pos to row2nd pred_end
     row2end_predend = GetInfo(df, row2end, 'pred_end')
@@ -925,10 +929,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
 
     #
     # move to row2end_end to nextcall_start
-    #df = move_wake_for_coming_call(df, row2end_predend, nextCall_start)
-
-
-
+    df = move_wake_for_coming_call(df, row2end_predend, nextCall_start)
 
     return df
 
