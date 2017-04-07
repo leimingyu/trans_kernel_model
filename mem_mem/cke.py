@@ -934,12 +934,12 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
 
 #------------------------------------------------------------------------------
 # Move wake calls to the coming api start: no ovlp during the rangeT
+# Warning: there are cases where overlapping exists
 #------------------------------------------------------------------------------
 def move_wake_for_coming_call(df_all, preEndT, curStartT):
     df = df_all.copy(deep=True)
     wake_list = GetWakeListBefore(df, preEndT)
     print('move_wake_for_coming_call, wake list {} '.format(wake_list))
-    #
     #
     dur = curStartT - preEndT
 
@@ -957,8 +957,6 @@ def move_wake_for_coming_call(df_all, preEndT, curStartT):
             df = UpdateCell(df, wake_row, 'bytes_left',  bytes_left_new)
             df = UpdateCell(df, wake_row, 'bytes_done',  bytes_done_new)
             df = UpdateCell(df, wake_row, 'current_pos', curStartT)
-
-
     return df
 
 #------------------------------------------------------------------------------
