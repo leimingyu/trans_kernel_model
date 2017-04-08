@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from math import *
+import operator
 
 
 class DeviceInfo():
@@ -95,6 +96,48 @@ def SetWake(df_all, r1):
     df = UpdateCell(df, r1, 'current_pos', get_rowinfo(df, r1)['start'])
     df = UpdateCell(df, r1, 'pred_end', get_rowinfo(df, r1)['end'])
     return df
+
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def SortKern(df_all, kernlist):
+    ken_num = len(kernlist)
+    if ken_num == 1:
+        return kernlist
+
+    sorted_kern = [] 
+
+    # sort by the kernel starting time
+    k_dd = {}
+    for k_row in kernlist:
+        k_dd[k_row] = GetInfo(df_all, k_row, 'start')
+
+    sorted_kern = sorted(k_dd.items(), key=operator.itemgetter(1))
+
+    kern_row_list_sort = []
+    for item in sorted_kern:
+        kern_row_list_sort.append(item[0])
+
+    return kern_row_list_sort 
+
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def GetKernID(df, mystream, myrow):
+    df_mystream = df.loc[df.stream_id == mystream]
+
+    count = 0
+    kern_id = None
+    for index, row in df_mystream.iterrows():
+        if row.api_type == 'kern': 
+            if index == myrow:
+                kern_id = count 
+            else:
+                count += 1
+
+    return kern_id
 
 
 #------------------------------------------------------------------------------
