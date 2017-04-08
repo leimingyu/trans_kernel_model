@@ -870,7 +870,7 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
     # check whether there is h2d ovlp
     if h2d_list:
         cc = len(h2d_list)
-        print('cc {} for all the wake list'.format(cc))
+        print('cc {} for all the wake h2d list'.format(cc))
         for r in h2d_list: 
             df = Update_h2d_bytes(df, r, begT, endT, ways = cc)
         # check any h2d call
