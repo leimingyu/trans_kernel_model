@@ -4,6 +4,7 @@ from math import *
 import sys
 
 from model_param import *
+import avgblk
 import copy 
 
 
@@ -841,8 +842,16 @@ def StartNext_byType(df_all, row_list):
 #------------------------------------------------------------------------------
 # update time between an interval  
 #------------------------------------------------------------------------------
-def update_by_range(df_all, begT, endT):
+def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_kernel_list):
     df = df_all.copy(deep=True)
+    SMreslist = copy.deepcopy(SM_resList)
+    SMtracelist = copy.deepcopy(SM_traceList)
+
+    if len(SMreslist) <> len(SMtracelist):
+        sys.stderr.write('miss match on sm resource and trace table!')
+        return df, SMreslist, SMtracelist
+
+    sm_num = len(SMreslist)
 
     # find out the wake api during the range
     wake_list = GetWakeListByTime(df, begT, endT)
@@ -873,17 +882,75 @@ def update_by_range(df_all, begT, endT):
     # check whether there is kern ovlp
     if kern_list:
         """
+        First, we need to check whether the kernel is already running
+        Then
         case 1) there is one kernel, register in the gpu trace table
         case 2) if there are more, add them by the kernel starting time, to the
         gpu SM strace table
         """
-        sys.stderr.write('kernel model no accomplished yet!')
-        pass
+        #
+        # if kernel start is before begT, then it is already running, no need to cnt 
 
-    #for rowid in wake_list:
+
+        #
+        # sort kern rows by the starting time
+        sorted_kerns = SortKern(df, kern_list)
+        print('sorted kernel rows: {}'.format(sorted_kerns))
+
+        #
+        # for current kernel, find out which kernel index in the stream
+        my_kernrow = sorted_kerns[0]
+        my_kernstream = GetInfo(df, my_kernrow, 'stream_id')
+        my_kernstream = int(my_kernstream)
+        my_kernid = GetKernID(df, my_kernstream, my_kernrow)
+        print('kern row {}, stream {}, kern_id_in_stream {}'.format(my_kernrow,
+            my_kernstream, my_kernid))
+
+        #print(type(my_kernstream))
+        #print(type(my_kernid))
+
+        my_kernel_info = stream_kernel_list[my_kernstream][my_kernid]
+        my_kernel_info.start_ms = GetInfo(df, my_kernrow, 'start')
+
+        #Dump_kernel_info(my_kernel_info)
+
+        kernels = []
+        kernels.append(my_kernel_info)
+
+        #
+        # run cke model
+        SMreslist, SMtracelist = avgblk.cke_model(Gpu, 
+                                        SMreslist, SMtracelist, kernels)
+
+        ## find the kernel execution time from the sm trace table
+        #result_kernel_runtime_dd = avgblk.Get_KernTime(SMtracelist)
+        #print result_kernel_runtime_dd
+
+        #sys.stderr.write('kernel model no accomplished yet!')
+        print('kernel model still need some work!')
+        #pass
+
+
+    return df, SMreslist, SMtracelist
+
+
+#------------------------------------------------------------------------------
+# cke model using global var
+#------------------------------------------------------------------------------
+def cke_model_v1(df_all):
+    df = df_all.copy(deep=True)
+
+    global stream_kernel_list
+    global SM_resList
+    global SM_traceList
+
+    print SM_traceList[0]
+
 
 
     return df
+
+
 
 #------------------------------------------------------------------------------
 # check active stream dd and terminate an api that ends soon
