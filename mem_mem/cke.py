@@ -927,22 +927,22 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
             if Found
 
+
+
+            for i in range(0, kern_list_size):
+                cur_row = sorted_kerns[i]
+                pre_row = sorted_kerns[i-1]
+
+                # check ovlp
+                cur_start = GetInfo(df, cur_row, 'start') 
+                cur_end = GetInfo(df, cur_row, 'end') 
+
+                pre_start = GetInfo(df, pre_row, 'start') 
+                pre_end  = GetInfo(df, pre_row, 'end') 
+
+                OVLP = True if cur_start < pre_end else False
+
             sys.stderr.write('kernel model no accomplished yet!')
-
-
-            #for i in range(0, kern_list_size):
-            #    cur_row = sorted_kerns[i]
-            #    pre_row = sorted_kerns[i-1]
-
-            #    # check ovlp
-            #    cur_start = GetInfo(df, cur_row, 'start') 
-            #    cur_end = GetInfo(df, cur_row, 'end') 
-
-            #    pre_start = GetInfo(df, pre_row, 'start') 
-            #    pre_end  = GetInfo(df, pre_row, 'end') 
-
-            #    OVLP = True if cur_start < pre_end else False
-
 
 
         ## find the kernel execution time from the sm trace table
