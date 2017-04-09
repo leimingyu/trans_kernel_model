@@ -925,6 +925,8 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
             sorted_kerns = SortKern(df, kern_list)
             print('sorted kernel rows: {}'.format(sorted_kerns))
 
+            for i in range(1, kern_list_size):
+
        
 
 
