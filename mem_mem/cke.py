@@ -941,20 +941,20 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
         if kern_list_size > 1:
 
-            sys.stderr.write('kernel model no accomplished yet!')
+            #sys.stderr.write('kernel model no accomplished yet!')
 
-            #for i in range(1, kern_list_size):
-            #    cur_row = sorted_kerns[i]
-            #    pre_row = sorted_kerns[i-1]
+            for i in range(0, kern_list_size):
+                cur_row = sorted_kerns[i]
+                pre_row = sorted_kerns[i-1]
 
-            #    # check ovlp
-            #    cur_start = GetInfo(df, cur_row, 'start') 
-            #    cur_end = GetInfo(df, cur_row, 'end') 
+                # check ovlp
+                cur_start = GetInfo(df, cur_row, 'start') 
+                cur_end = GetInfo(df, cur_row, 'end') 
 
-            #    pre_start = GetInfo(df, pre_row, 'start') 
-            #    pre_end  = GetInfo(df, pre_row, 'end') 
+                pre_start = GetInfo(df, pre_row, 'start') 
+                pre_end  = GetInfo(df, pre_row, 'end') 
 
-            #    OVLP = True if cur_start < prev_end else False
+                OVLP = True if cur_start < prev_end else False
 
 
 
