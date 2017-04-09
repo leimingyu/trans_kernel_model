@@ -140,8 +140,24 @@ def GetKernID(df, mystream, myrow):
     return kern_id
 
 #------------------------------------------------------------------------------
-# GetKernelInfoTag 
+# GetKernelInfoandTag 
 #------------------------------------------------------------------------------
+def GetKernelInfoandTag(df, row, stream_kernel_list)
+    my_kernstream = GetInfo(df, my_kernrow, 'stream_id')
+    my_kernstream = int(my_kernstream)
+    my_kernid = GetKernID(df, my_kernstream, my_kernrow)
+    print('kern row {}, stream {}, kern_id_in_stream {}'.format(my_kernrow,
+        my_kernstream, my_kernid))
+
+    #print(type(my_kernstream))
+    #print(type(my_kernid))
+
+    my_kernel_info = stream_kernel_list[my_kernstream][my_kernid]
+    my_kernel_info.start_ms = GetInfo(df, my_kernrow, 'start')
+
+            #
+            # kernel id label
+            kid = GetInfo(df, my_kernrow, 'kern_id')
 
 
 #------------------------------------------------------------------------------
