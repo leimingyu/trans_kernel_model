@@ -926,6 +926,8 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
         if kern_list_size > 1:
 
+            sys.stderr.write('kernel model no accomplished yet!')
+
             #for i in range(1, kern_list_size):
             #    cur_row = sorted_kerns[i]
             #    pre_row = sorted_kerns[i-1]
