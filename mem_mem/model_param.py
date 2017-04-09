@@ -163,10 +163,11 @@ def GetKernelInfoAndTag(df, row, stream_kernel_list):
 #------------------------------------------------------------------------------
 def FindKernelRecord(SMtracelist, kid):
     Found = False
-
     for df_sm in SMtracelist:
         kernid_list = df_sm['kernel_id'].unique()
-
+        if kid in kernid_list:
+            Found = True
+            break
     return Found
 
 #------------------------------------------------------------------------------
