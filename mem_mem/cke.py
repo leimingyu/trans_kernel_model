@@ -915,13 +915,13 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
             #Dump_kernel_info(my_kernel_info)
 
-            kernels = []
-            kernels.append(my_kernel_info)
+            #kernels = []
+            #kernels.append(my_kernel_info)
 
             #
             # run cke model
-            SMreslist, SMtracelist = avgblk.cke_model(Gpu, 
-                                            SMreslist, SMtracelist, kernels)
+            SMreslist, SMtracelist = avgblk.run_gpu_kernel(Gpu, 
+                    SMreslist, SMtracelist, my_kernel_info, my_kernid)
 
         if kern_list_size > 1:
 
