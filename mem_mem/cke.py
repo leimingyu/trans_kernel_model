@@ -892,6 +892,10 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         # if kernel start is before begT, then it is already running, no need to cnt 
 
         kern_list_size = len(kern_list)
+        #
+        # sort kern rows by the starting time
+        sorted_kerns = SortKern(df, kern_list)
+        print('sorted kernel rows: {}'.format(sorted_kerns))
 
         if kern_list_size == 1:
             #
@@ -920,14 +924,10 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
                                             SMreslist, SMtracelist, kernels)
 
         if kern_list_size > 1:
-            #
-            # sort kern rows by the starting time
-            sorted_kerns = SortKern(df, kern_list)
-            print('sorted kernel rows: {}'.format(sorted_kerns))
 
             for i in range(1, kern_list_size):
-                print kern_list_size[i]
-                print kern_list_size[i-1]
+                print sorted_kerns[i]
+                print sorted_kerns[i-1]
 
 
         ## find the kernel execution time from the sm trace table
