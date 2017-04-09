@@ -910,24 +910,8 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         print('sorted kernel rows: {}'.format(sorted_kerns))
 
         if kern_list_size == 1:
-            #
             # for current kernel, find out which kernel index in the stream
             my_kernrow = sorted_kerns[0]
-            my_kernstream = GetInfo(df, my_kernrow, 'stream_id')
-            my_kernstream = int(my_kernstream)
-            my_kernid = GetKernID(df, my_kernstream, my_kernrow)
-            print('kern row {}, stream {}, kern_id_in_stream {}'.format(my_kernrow,
-                my_kernstream, my_kernid))
-
-            #print(type(my_kernstream))
-            #print(type(my_kernid))
-
-            my_kernel_info = stream_kernel_list[my_kernstream][my_kernid]
-            my_kernel_info.start_ms = GetInfo(df, my_kernrow, 'start')
-
-            #
-            # kernel id label
-            kid = GetInfo(df, my_kernrow, 'kern_id')
 
             #Dump_kernel_info(my_kernel_info)
 
