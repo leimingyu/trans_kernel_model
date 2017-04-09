@@ -921,26 +921,25 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
         if kern_list_size > 1:
 
-            # kernel id label
-            kid = GetInfo(df, row, 'kern_id')
-            Found = FindKernelRecord(SMtracelist, kid)
-
-            if Found
-
-
-
             for i in range(0, kern_list_size):
-                cur_row = sorted_kerns[i]
-                pre_row = sorted_kerns[i-1]
+                # kernel id label
+                row = sorted_kerns[i]
+                kid = GetInfo(df, row, 'kern_id')
+                Found = FindKernelRecord(SMtracelist, kid)
 
-                # check ovlp
-                cur_start = GetInfo(df, cur_row, 'start') 
-                cur_end = GetInfo(df, cur_row, 'end') 
+                print('Find kernel, row {}, in SM trace'.format(row))
 
-                pre_start = GetInfo(df, pre_row, 'start') 
-                pre_end  = GetInfo(df, pre_row, 'end') 
+                #cur_row = sorted_kerns[i]
+                #pre_row = sorted_kerns[i-1]
 
-                OVLP = True if cur_start < pre_end else False
+                ## check ovlp
+                #cur_start = GetInfo(df, cur_row, 'start') 
+                #cur_end = GetInfo(df, cur_row, 'end') 
+
+                #pre_start = GetInfo(df, pre_row, 'start') 
+                #pre_end  = GetInfo(df, pre_row, 'end') 
+
+                #OVLP = True if cur_start < pre_end else False
 
             sys.stderr.write('kernel model no accomplished yet!')
 
