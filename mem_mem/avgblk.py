@@ -342,9 +342,6 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
             #block_end = block_start + avg_blk_time_list[kern_id]
             block_end = block_start + kern.avg_blk_time
 
-            print('kern {} : block_start: {}, block_end: {}, block_start {}'.format(kern_id, 
-                                                            block_start, block_end, 
-                                                            Search_block_start(sm_trace[sm_id], kern_id)))
 
             # add the current block info to the current sm
             sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
