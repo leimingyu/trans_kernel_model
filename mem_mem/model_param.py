@@ -159,6 +159,15 @@ def GetKernelInfoAndTag(df, row, stream_kernel_list):
 
 
 #------------------------------------------------------------------------------
+# Find Kernel Record for sm trace 
+#------------------------------------------------------------------------------
+def FindKernelRecord(SMtracelist, kid):
+    Found = False
+
+
+    return Found
+
+#------------------------------------------------------------------------------
 # Set the target row to be wake status, return stream id
 #------------------------------------------------------------------------------
 def GetWakeListByTime(df_all, begT, endT):
