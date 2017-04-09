@@ -891,36 +891,42 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         #
         # if kernel start is before begT, then it is already running, no need to cnt 
 
+        kern_list_size = len(kern_list)
 
-        #
-        # sort kern rows by the starting time
-        sorted_kerns = SortKern(df, kern_list)
-        print('sorted kernel rows: {}'.format(sorted_kerns))
+        if kern_list_size == 1:
+            #
+            # for current kernel, find out which kernel index in the stream
+            my_kernrow = sorted_kerns[0]
+            my_kernstream = GetInfo(df, my_kernrow, 'stream_id')
+            my_kernstream = int(my_kernstream)
+            my_kernid = GetKernID(df, my_kernstream, my_kernrow)
+            print('kern row {}, stream {}, kern_id_in_stream {}'.format(my_kernrow,
+                my_kernstream, my_kernid))
 
-        #
-        # for current kernel, find out which kernel index in the stream
-        my_kernrow = sorted_kerns[0]
-        my_kernstream = GetInfo(df, my_kernrow, 'stream_id')
-        my_kernstream = int(my_kernstream)
-        my_kernid = GetKernID(df, my_kernstream, my_kernrow)
-        print('kern row {}, stream {}, kern_id_in_stream {}'.format(my_kernrow,
-            my_kernstream, my_kernid))
+            #print(type(my_kernstream))
+            #print(type(my_kernid))
 
-        #print(type(my_kernstream))
-        #print(type(my_kernid))
+            my_kernel_info = stream_kernel_list[my_kernstream][my_kernid]
+            my_kernel_info.start_ms = GetInfo(df, my_kernrow, 'start')
 
-        my_kernel_info = stream_kernel_list[my_kernstream][my_kernid]
-        my_kernel_info.start_ms = GetInfo(df, my_kernrow, 'start')
+            #Dump_kernel_info(my_kernel_info)
 
-        #Dump_kernel_info(my_kernel_info)
+            kernels = []
+            kernels.append(my_kernel_info)
 
-        kernels = []
-        kernels.append(my_kernel_info)
+            #
+            # run cke model
+            SMreslist, SMtracelist = avgblk.cke_model(Gpu, 
+                                            SMreslist, SMtracelist, kernels)
 
-        #
-        # run cke model
-        SMreslist, SMtracelist = avgblk.cke_model(Gpu, 
-                                        SMreslist, SMtracelist, kernels)
+        if kern_list_size > 1:
+            #
+            # sort kern rows by the starting time
+            sorted_kerns = SortKern(df, kern_list)
+            print('sorted kernel rows: {}'.format(sorted_kerns))
+
+       
+
 
         ## find the kernel execution time from the sm trace table
         #result_kernel_runtime_dd = avgblk.Get_KernTime(SMtracelist)
