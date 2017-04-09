@@ -339,7 +339,8 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
                 block_start = Search_block_start(sm_trace[sm_id], kern_id) + offset
 
 
-            block_end = block_start + avg_blk_time_list[kern_id]
+            #block_end = block_start + avg_blk_time_list[kern_id]
+            block_end = block_start + kern.avg_blk_time
 
             print('kern {} : block_start: {}, block_end: {}, block_start {}'.format(kern_id, 
                                                             block_start, block_end, 
@@ -381,7 +382,9 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
                     sms[sm_id].Allocate_block(kern)
 
                     block_start = blkend_min # when prev blks end, current block starts
-                    block_end = block_start + avg_blk_time_list[kern_id]     # add avgblktime for currrent kernel
+                    #block_end = block_start + avg_blk_time_list[kern_id]     # add avgblktime for currrent kernel
+                    block_end = block_start + kern.avg_blk_time
+
                     break # jump out of the loop
                 else:
                     # not enough to allocat another block, remove
