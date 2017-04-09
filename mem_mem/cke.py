@@ -927,7 +927,7 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
             #
             # kernel id label
-            kid = 
+            kid = GetInfo(df, my_kernrow, 'kern_id')
 
             #Dump_kernel_info(my_kernel_info)
 
