@@ -942,23 +942,6 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
     return df, SMreslist, SMtracelist
 
 
-#------------------------------------------------------------------------------
-# cke model using global var
-#------------------------------------------------------------------------------
-def cke_model_v1(df_all):
-    df = df_all.copy(deep=True)
-
-    global stream_kernel_list
-    global SM_resList
-    global SM_traceList
-
-    print SM_traceList[0]
-
-
-
-    return df
-
-
 
 #------------------------------------------------------------------------------
 # check active stream dd and terminate an api that ends soon
