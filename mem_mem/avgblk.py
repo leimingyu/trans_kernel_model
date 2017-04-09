@@ -271,3 +271,129 @@ def Get_KernTime(sm_trace):
     return kern_dd
 
 
+#------------------------------------------------------------------------------
+# run a single gpu kernel one at a time
+#------------------------------------------------------------------------------
+def run_gpu_kernel(sms_, sm_trace_, kern, kern_id):
+    sms = copy.deepcopy(sms_)
+    sm_trace = copy.deepcopy(sm_trace_)
+    
+    sm_num = len(sm_trace_)
+
+    # schedule current kernel on the device
+    kernel_blocks = int(kern.gridDim) # total block for current kern
+
+    kern_start = kern.start_ms
+    #print('\n---------------\nkern-{}: start {}'.format(kern_id, kern_start))
+
+    # 1) find the which sm to start
+    # 2) compute whether kernel_start happens before previous kernel ends or not
+    sm2start, AfterPrevKern = find_sm2start(sm_trace, kern_start)
+    #print('sm2start : {}, AfterPrevKern {}'.format(sm2start, AfterPrevKern))
+
+    #---------------------------------------------------------
+    # Run after previous kernel
+    #---------------------------------------------------------
+    if AfterPrevKern:
+        # deactivate all the previous active blocks
+        myid = 0
+        for df_sm in sm_trace:
+            df_activeblk = df_sm.loc[df_sm['active'] == 1]
+            for index, row in df_activeblk.iterrows():     # find the row index of active blocks
+                sm_trace[myid].loc[index]['active'] = 0    # deactivate 
+                sms[myid].Rm(kern)                         # free the block resource
+                myid = myid + 1
+
+    #---------------------------------------------------------
+    # Continue current kernel
+    #---------------------------------------------------------
+    for bid in range(kernel_blocks):
+        sm_id = (bid + sm2start) % sm_num
+        #print('sm_id {} '.format(sm_id))
+
+        to_allocate_another_block = check_sm_resource(sms[sm_id], kern)
+        #print('to_allocate_another_block {}'.format(to_allocate_another_block)) 
+
+        #----------------------------------
+        # there is enough resource to host the current block
+        #----------------------------------
+        if to_allocate_another_block == True:
+            sms[sm_id].Allocate_block(kern)  # deduct resources on the current sm
+
+            #---------------------------------------
+            # register the block in the trace table
+            #---------------------------------------
+            block_start = None
+
+            offset = 0.0
+            if AfterPrevKern and bid < sm_num:  # Noted: only the 1st block will adjut the kern_start
+                offset = kern_start
+
+            # if current sm trace table is empty, start from 0
+            # else find the blocks that will end soon, and retire them
+            if sm_trace[sm_id].empty:
+                block_start = 0
+            else:
+                # read the sm_trace table, find out all the active blocks on current sm, look for the earliest start
+                block_start = Search_block_start(sm_trace[sm_id], kern_id) + offset
+
+
+            block_end = block_start + avg_blk_time_list[kern_id]
+
+            print('kern {} : block_start: {}, block_end: {}, block_start {}'.format(kern_id, 
+                                                            block_start, block_end, 
+                                                            Search_block_start(sm_trace[sm_id], kern_id)))
+
+            # add the current block info to the current sm
+            sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
+                                                      'block_id': bid, 
+                                                      'block_start': block_start, # add the kern stat
+                                                      'block_end' : block_end,
+                                                      'batch_id': sms[sm_id].batch,
+                                                      'kernel_id': kern_id,
+                                                      'active': 1}, ignore_index=True)
+
+        #-------------------------------------------
+        # There is no more resources to host the blk, consider SM is full now
+        # we need to (1) decide how many blks to retire (2) when to start current blk
+        if to_allocate_another_block == False:
+            # find out the active blocks on current sm
+            df_sm = sm_trace[sm_id]
+            df_activeblk = df_sm.loc[df_sm['active'] == 1]
+            df_loc = df_activeblk.copy(deep=True)
+
+            cur_activeblk_num = df_activeblk.shape[0]
+
+
+            for ii in range(cur_activeblk_num):
+                # find out blocks ending soon
+                blkend_min = df_loc['block_end'].min()
+                df_blk2end = df_loc.loc[df_loc['block_end'] == blkend_min]
+
+                # retire the blocks
+                for index, row in df_blk2end.iterrows():
+                    sm_trace[sm_id].loc[index]['active'] = 0 
+                    sms[sm_id].Rm(kern) # free the block resource
+
+                # enough to allocate a current block
+                if check_sm_resource(sms[sm_id], kern):
+                    sms[sm_id].Allocate_block(kern)
+
+                    block_start = blkend_min # when prev blks end, current block starts
+                    block_end = block_start + avg_blk_time_list[kern_id]     # add avgblktime for currrent kernel
+                    break # jump out of the loop
+                else:
+                    # not enough to allocat another block, remove
+                    df_loc = df_sm.loc[df_sm['active'] == 1]
+
+            # update the trace table
+            sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
+                                                      'block_id': bid, 
+                                                      'block_start': block_start,
+                                                      'block_end' : block_end,
+                                                      'batch_id': sms[sm_id].batch,
+                                                      'kernel_id': kern_id,
+                                                      'active': 1}, ignore_index=True)
+            
+    # return the updated sm resource and trace table
+    return sms, sm_trace
