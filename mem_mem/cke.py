@@ -913,10 +913,7 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
             # for current kernel, find out which kernel index in the stream
             my_kernrow = sorted_kerns[0]
 
-            #Dump_kernel_info(my_kernel_info)
-
-            #kernels = []
-            #kernels.append(my_kernel_info)
+            my_kernel_info, kid = GetKernelInfoAndTag(df, my_kernrow, stream_kernel_list)
 
             #
             # run cke model
