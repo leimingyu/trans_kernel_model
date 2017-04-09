@@ -921,7 +921,11 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
 
         if kern_list_size > 1:
 
+            # kernel id label
+            kid = GetInfo(df, row, 'kern_id')
             Found = FindKernelRecord(SMtracelist, kid)
+
+            if Found
 
             sys.stderr.write('kernel model no accomplished yet!')
 
