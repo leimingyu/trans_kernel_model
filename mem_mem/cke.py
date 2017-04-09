@@ -562,6 +562,12 @@ def init_sort_api_with_extra_cols(df_cke_list):
     #---------------------------
     # update kernel_id
     #---------------------------
+    kid = 0
+    for index, row in result.iterrows():
+        if row.api_type == 'kern':
+            
+            kid+=1
+
 
 
     return result
