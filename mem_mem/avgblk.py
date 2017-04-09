@@ -274,7 +274,7 @@ def Get_KernTime(sm_trace):
 #------------------------------------------------------------------------------
 # run a single gpu kernel one at a time
 #------------------------------------------------------------------------------
-def run_gpu_kernel(sms_, sm_trace_, kern, kern_id):
+def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
     sms = copy.deepcopy(sms_)
     sm_trace = copy.deepcopy(sm_trace_)
     
