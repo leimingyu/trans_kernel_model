@@ -551,6 +551,7 @@ def init_sort_api_with_extra_cols(df_cke_list):
     #-------------------------------
     # add extra columns
     #-------------------------------
+    result['kernel_id'] = None 
     result['bytes_done'] = 0.0
     result['bytes_left'] = result['size_kb']
     result['current_pos'] = 0.0
