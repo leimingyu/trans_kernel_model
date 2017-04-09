@@ -551,7 +551,7 @@ def init_sort_api_with_extra_cols(df_cke_list):
     #-------------------------------
     # add extra columns
     #-------------------------------
-    result['kernel_id'] = None 
+    result['kern_id'] = None 
     result['bytes_done'] = 0.0
     result['bytes_left'] = result['size_kb']
     result['current_pos'] = 0.0
@@ -565,9 +565,8 @@ def init_sort_api_with_extra_cols(df_cke_list):
     kid = 0
     for index, row in result.iterrows():
         if row.api_type == 'kern':
-            
+            result = UpdateCell(result, index, 'kern_id', kid) 
             kid+=1
-
 
 
     return result
