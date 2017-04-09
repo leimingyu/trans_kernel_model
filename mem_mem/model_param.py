@@ -165,13 +165,7 @@ def FindKernelRecord(SMtracelist, kid):
     Found = False
 
     for df_sm in SMtracelist:
-        df_activeblk = df_sm.loc[df_sm['active'] == 1]
-        for index, row in df_activeblk.iterrows():     # find the row index of active blocks
-            sm_trace[myid].loc[index]['active'] = 0    # deactivate 
-            sms[myid].Rm(kern)                         # free the block resource
-            myid = myid + 1
-    
-
+        kernid_list = df_sm['kernel_id'].unique()
 
     return Found
 
