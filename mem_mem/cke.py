@@ -936,7 +936,8 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
                 pre_start = GetInfo(df, pre_row, 'start') 
                 pre_end  = GetInfo(df, pre_row, 'end') 
 
-                if cur_start < prev_end
+                OVLP = True if cur_start < prev_end else False
+
 
 
         ## find the kernel execution time from the sm trace table
