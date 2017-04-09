@@ -912,7 +912,6 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         if kern_list_size == 1:
             # for current kernel, find out which kernel index in the stream
             my_kernrow = sorted_kerns[0]
-
             my_kernel_info, kid = GetKernelInfoAndTag(df, my_kernrow, stream_kernel_list)
 
             #
