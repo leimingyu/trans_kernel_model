@@ -278,7 +278,8 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
     sms = copy.deepcopy(sms_)
     sm_trace = copy.deepcopy(sm_trace_)
     
-    sm_num = len(sm_trace_)
+    #sm_num = len(sm_trace_)
+    sm_num = Gpu.sm_num
 
     # schedule current kernel on the device
     kernel_blocks = int(kern.gridDim) # total block for current kern
