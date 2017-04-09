@@ -926,8 +926,12 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         if kern_list_size > 1:
 
             for i in range(1, kern_list_size):
-                print sorted_kerns[i]
-                print sorted_kerns[i-1]
+                cur_row = sorted_kerns[i]
+                pre_row = sorted_kerns[i-1]
+
+                # check ovlp
+                GetInfo(df, cur_row, 'start') 
+                GetInfo(df, cur_row, 'end') 
 
 
         ## find the kernel execution time from the sm trace table
