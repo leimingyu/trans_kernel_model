@@ -558,6 +558,12 @@ def init_sort_api_with_extra_cols(df_cke_list):
     #result['time_left'] = 0.0
     result['pred_end'] = 0.0
 
+
+    #---------------------------
+    # update kernel_id
+    #---------------------------
+
+
     return result
 
 
