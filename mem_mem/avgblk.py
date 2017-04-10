@@ -152,7 +152,7 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
                     block_start = Search_block_start(sm_trace[sm_id], i) + offset
 
                 #block_end = block_start + avg_blk_time_list[i]
-                block_end = block_start + kernels[i].avg_blk_time
+                block_end = block_start + kern.avg_blk_time
 
                 # add the current block info to the current sm
                 sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
@@ -192,7 +192,7 @@ def cke_model(Gpu, sms_, sm_trace_, kernels_):
                         block_start = blkend_min 
                         # add avgblktime for currrent kernel
                         #block_end = block_start + avg_blk_time_list[i]
-                        block_end = block_start + kernels[i].avg_blk_time
+                        block_end = block_start + kern.avg_blk_time
                         break # jump out of the loop
                     else:
                         # not enough to allocat another block, remove
@@ -235,7 +235,7 @@ def Get_KernTime(sm_trace):
 
     for df_sm in sm_trace:
         kids = df_sm.kernel_id.unique() # find out all the kernels on current sm
-
+        #
         # case 1: given the empty dd
         if not kern_dd: 
             for kern_id in kids: # find kernel time for each unique kernel
@@ -278,42 +278,36 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
     sms = copy.deepcopy(sms_)
     sm_trace = copy.deepcopy(sm_trace_)
     
-    #sm_num = len(sm_trace_)
     sm_num = Gpu.sm_num
 
-    # schedule current kernel on the device
     kernel_blocks = int(kern.gridDim) # total block for current kern
 
     kern_start = kern.start_ms
-    #print('\n---------------\nkern-{}: start {}'.format(kern_id, kern_start))
 
     # 1) find the which sm to start
     # 2) compute whether kernel_start happens before previous kernel ends or not
     sm2start, AfterPrevKern = find_sm2start(sm_trace, kern_start)
-    #print('sm2start : {}, AfterPrevKern {}'.format(sm2start, AfterPrevKern))
 
     #---------------------------------------------------------
     # Run after previous kernel
     #---------------------------------------------------------
     if AfterPrevKern:
         # deactivate all the previous active blocks
-        myid = 0
         for df_sm in sm_trace:
             df_activeblk = df_sm.loc[df_sm['active'] == 1]
-            for index, row in df_activeblk.iterrows():     # find the row index of active blocks
-                sm_trace[myid].loc[index]['active'] = 0    # deactivate 
-                sms[myid].Rm(kern)                         # free the block resource
-                myid = myid + 1
+            if not df_activeblk.empty:
+                myid = int(df_activeblk.iloc[0]['sm_id'])
+                for index, row in df_activeblk.iterrows():     # find the row index of active blocks
+                    sm_trace[myid].loc[index]['active'] = 0    # deactivate 
+                    sms[myid].Rm(kern)                         # free the block resource
 
     #---------------------------------------------------------
     # Continue current kernel
     #---------------------------------------------------------
     for bid in range(kernel_blocks):
         sm_id = (bid + sm2start) % sm_num
-        #print('sm_id {} '.format(sm_id))
 
         to_allocate_another_block = check_sm_resource(sms[sm_id], kern)
-        #print('to_allocate_another_block {}'.format(to_allocate_another_block)) 
 
         #----------------------------------
         # there is enough resource to host the current block
@@ -330,18 +324,15 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
             if AfterPrevKern and bid < sm_num:  # Noted: only the 1st block will adjut the kern_start
                 offset = kern_start
 
-            # if current sm trace table is empty, start from 0
+            # if current sm trace table is empty, start from kern_start 
             # else find the blocks that will end soon, and retire them
             if sm_trace[sm_id].empty:
-                block_start = 0
+                block_start = kern_start 
             else:
                 # read the sm_trace table, find out all the active blocks on current sm, look for the earliest start
                 block_start = Search_block_start(sm_trace[sm_id], kern_id) + offset
 
-
-            #block_end = block_start + avg_blk_time_list[kern_id]
             block_end = block_start + kern.avg_blk_time
-
 
             # add the current block info to the current sm
             sm_trace[sm_id] = sm_trace[sm_id].append({'sm_id': sm_id, 
@@ -379,7 +370,6 @@ def run_gpu_kernel(Gpu, sms_, sm_trace_, kern, kern_id):
                     sms[sm_id].Allocate_block(kern)
 
                     block_start = blkend_min # when prev blks end, current block starts
-                    #block_end = block_start + avg_blk_time_list[kern_id]     # add avgblktime for currrent kernel
                     block_end = block_start + kern.avg_blk_time
 
                     break # jump out of the loop
