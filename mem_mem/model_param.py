@@ -193,6 +193,16 @@ def GetWakeListBefore(df_all, endT):
             wake_list.append(index)
     return wake_list
 
+
+def GetWakeKernList(df):
+    df_wake_kern = df.loc[(df.status == 'wake') & (df.api_type == 'kern')]
+    wake_list = []
+    if not df_wake_kern.empty:
+        for index, row in df_wake_kern.iterrows():
+                wake_list.append(index)
+    return wake_list
+
+
 #------------------------------------------------------------------------------
 # Set the target row to be wake status, return stream id
 #------------------------------------------------------------------------------
@@ -284,21 +294,77 @@ def Update_row_h2d(df_all, row, simT, predendT, ways = 1.0):
     bytes_left_new =  bytes_left  - bytes_transfer
     bytes_done_new =  bytes_left  + bytes_transfer
 
-
     time_left_no_ovlp = bytes_left_new / bw_org
     # predendT with cc + time left (transfer with org bw)
     pred_end_new =  predendT + time_left_no_ovlp
-
     # update info
     df = UpdateCell(df, row, 'bytes_done', bytes_done_new) 
     df = UpdateCell(df, row, 'bytes_left', bytes_left_new) 
     df = UpdateCell(df, row, 'current_pos', simT) 
     df = UpdateCell(df, row, 'pred_end', pred_end_new) 
-
     
     return df
 
 
+#------------------------------------------------------------------------------
+# update kernel prediction and all the following call  
+#------------------------------------------------------------------------------
+def UpdateKernelPred(df_all, kernel_runtime_dd, sorted_kerns):
+    """
+    Kernel runtime dd: key = kern_id, value = [startT , end T]
+    Sorted kerns:  a list of the kernel row index
+    """
+    df = df_all.copy(deep=True)
+
+    for row in sorted_kerns:
+        kern_id = int(GetInfo(df, row, 'kern_id'))
+        kern_start = kernel_runtime_dd[kern_id][0]
+        kern_end   = kernel_runtime_dd[kern_id][1]
+        print('updating kernel row{}, with pred_start {}, pred_end {}'.format(row, 
+            kern_start, kern_end))
+        #
+        # update the pred, the start/end is not updated yet
+        df = UpdateCell(df, row, 'pred_end', kern_end)
+        #
+        # update the start and end time, and all the following api in the current stream
+        df = UpdateCallAfterKernel(df, row)
+        #
+        # at last, update the kernel end time
+        # the kernel start time will depend on the modeling result
+        df.set_value(row, 'start', kern_start)
+        df.set_value(row, 'end', kern_end)
+    return df
+
+#--------------
+# update kernel prediction and all the following call  
+#--------------
+def UpdateCallAfterKernel(df_all, kernrow):
+    df = df_all.copy(deep=True)
+
+    my_stream = GetInfo(df, kernrow, 'stream_id')
+    df_cur = df.loc[df.stream_id == my_stream]
+
+    StartUpdate = False
+    prev_start, prev_end, prev_pred = 0, 0, 0
+    cur_start, cur_end, cur_pred = 0, 0, 0
+
+    for index, row in df_cur.iterrows():
+        if StartUpdate:
+            cur_start, cur_end, cur_pred = row.start, row.end, row.pred_end 
+            ovhd = cur_start - prev_end
+            # compute new pos
+            new_start = prev_pred + ovhd
+            new_end = new_start + (cur_end - cur_start) 
+            # update the dataframe record
+            df.set_value(index, 'start',    new_start)
+            df.set_value(index, 'end',      new_end)
+            df.set_value(index, 'pred_end', new_end)
+                       
+        if index == kernrow:
+            StartUpdate = True
+            prev_start, prev_end, prev_pred = row.start, row.end, row.pred_end 
+
+    return df
 
 #------------------------------------------------------------------------------
 # update h2d api by the concurrency 
