@@ -901,57 +901,72 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         gpu SM strace table
         """
         #
-        # if kernel start is before begT, then it is already running, no need to cnt 
-
-        kern_list_size = len(kern_list)
-        #
         # sort kern rows by the starting time
         sorted_kerns = SortKern(df, kern_list)
         print('sorted kernel rows: {}'.format(sorted_kerns))
 
-        if kern_list_size == 1:
-            # for current kernel, find out which kernel index in the stream
-            my_kernrow = sorted_kerns[0]
-            my_kernel_info, kid = GetKernelInfoAndTag(df, my_kernrow, stream_kernel_list)
+        #
+        # if kernel start is before begT, then it is already running, no need to cnt 
+        kern_nums = len(sorted_kerns)
 
-            #
-            # run cke model
-            SMreslist, SMtracelist = avgblk.run_gpu_kernel(Gpu, 
-                    SMreslist, SMtracelist, my_kernel_info, kid)
+        #if kern_nums == 1:
+        #    # for current kernel, find out which kernel index in the stream
+        #    my_kernrow = sorted_kerns[0]
+        #    my_kernel_info, kid = GetKernelInfoAndTag(df, my_kernrow, stream_kernel_list)
 
-        if kern_list_size > 1:
+        #    Found = FindKernelRecord(SMtracelist, kid)
+        #    print('find kernel ? {} : row {}, in SM trace'.format(Found, row))
+        #    print('kid = {}'.format(kid))
+    
+        #    Dump_kernel_info(my_kernel_info)
+        #    print('kid = {}'.format(kid))
 
-            for i in range(0, kern_list_size):
-                # kernel id label
-                row = sorted_kerns[i]
-                kid = GetInfo(df, row, 'kern_id')
-                Found = FindKernelRecord(SMtracelist, kid)
+        #    #
+        #    # run cke model
+        #    SMreslist, SMtracelist = avgblk.run_gpu_kernel(Gpu, 
+        #            SMreslist, SMtracelist, my_kernel_info, kid)
 
-                print('Find kernel, row {}, in SM trace'.format(row))
 
-                #cur_row = sorted_kerns[i]
-                #pre_row = sorted_kerns[i-1]
 
-                ## check ovlp
-                #cur_start = GetInfo(df, cur_row, 'start') 
-                #cur_end = GetInfo(df, cur_row, 'end') 
+        for i in range(0, kern_nums):
+            # kernel id label
+            row = sorted_kerns[i]
+            kid = GetInfo(df, row, 'kern_id')
+            Found = FindKernelRecord(SMtracelist, kid)
+            print('find kernel ? {} : row {}, in SM trace'.format(Found, row))
+            print('kid = {}'.format(kid))
 
-                #pre_start = GetInfo(df, pre_row, 'start') 
-                #pre_end  = GetInfo(df, pre_row, 'end') 
+            if not Found:
+                #
+                # not Found : this is a new kernel
+                # find the kernel info and kernel_id to run on gpu
+                my_kernel_info, kid = GetKernelInfoAndTag(df, row, stream_kernel_list)
 
-                #OVLP = True if cur_start < pre_end else False
+                Dump_kernel_info(my_kernel_info)
 
-            sys.stderr.write('kernel model no accomplished yet!')
+                #
+                # run cke model
+                SMreslist, SMtracelist = avgblk.run_gpu_kernel(Gpu, 
+                        SMreslist, SMtracelist, my_kernel_info, kid)
+
+
+            #sys.stderr.write('kernel model no accomplished yet!')
 
 
         ## find the kernel execution time from the sm trace table
-        #result_kernel_runtime_dd = avgblk.Get_KernTime(SMtracelist)
-        #print result_kernel_runtime_dd
+        result_kernel_runtime_dd = avgblk.Get_KernTime(SMtracelist)
+        print result_kernel_runtime_dd
+
+
+        #
+        # according to the new kernel time, update the start and end time for the kernel, 
+        # and all the api calls behind
+
+
 
         #sys.stderr.write('kernel model no accomplished yet!')
         print('kernel model still need some work!')
         #pass
-
 
     return df, SMreslist, SMtracelist
 
@@ -997,6 +1012,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
 
     #
     # end the target row, update the bytes for other call
+    # todo: simPos may be ahead of next call start time
     df = end_target_row(df, row2end, simPos, nextCall_start)
 
     #
