@@ -1119,8 +1119,11 @@ def end_target_row(df_all, row2nd, simT, curT):
 
 
     if mytype == 'kern':
-        # update end with pred_end
-        pred_end = GetInfo(df, row2nd, 'pred_end') 
+        # update end/current_pos with pred_end
+        mypred = GetInfo(df, row2nd, 'pred_end') 
+        df.set_value(row, 'end', mypred)
+        df.set_value(row, 'current_pos', mypred)
+
 
 
         #sys.stderr.write('end_target_row, kern not implemented')
