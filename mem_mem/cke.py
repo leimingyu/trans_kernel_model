@@ -1123,13 +1123,9 @@ def end_target_row(df_all, row2nd, simT, curT):
         mypred = GetInfo(df, row2nd, 'pred_end') 
         df.set_value(row, 'end', mypred)
         df.set_value(row, 'current_pos', mypred)
-
-
-
+        df.set_value(row, 'status', 'done')
         #sys.stderr.write('end_target_row, kern not implemented')
         #pass
-
-
 
     return df
 
