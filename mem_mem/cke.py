@@ -909,25 +909,6 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         # if kernel start is before begT, then it is already running, no need to cnt 
         kern_nums = len(sorted_kerns)
 
-        #if kern_nums == 1:
-        #    # for current kernel, find out which kernel index in the stream
-        #    my_kernrow = sorted_kerns[0]
-        #    my_kernel_info, kid = GetKernelInfoAndTag(df, my_kernrow, stream_kernel_list)
-
-        #    Found = FindKernelRecord(SMtracelist, kid)
-        #    print('find kernel ? {} : row {}, in SM trace'.format(Found, row))
-        #    print('kid = {}'.format(kid))
-    
-        #    Dump_kernel_info(my_kernel_info)
-        #    print('kid = {}'.format(kid))
-
-        #    #
-        #    # run cke model
-        #    SMreslist, SMtracelist = avgblk.run_gpu_kernel(Gpu, 
-        #            SMreslist, SMtracelist, my_kernel_info, kid)
-
-
-
         for i in range(0, kern_nums):
             # kernel id label
             row = sorted_kerns[i]
@@ -958,11 +939,15 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
         print result_kernel_runtime_dd
 
 
-        #
+        # 4/9
         # according to the new kernel time, update the start and end time for the kernel, 
         # and all the api calls behind
+        # 4/10
+        # instead, update the pred_end for these kernels
+        df = UpdateKernelPred(df, result_kernel_runtime_dd, sorted_kerns)
 
-
+        #print GetInfo(df, 2, 'pred_end')
+        #print GetInfo(df, 6, 'pred_end')
 
         #sys.stderr.write('kernel model no accomplished yet!')
         print('kernel model still need some work!')
@@ -1015,6 +1000,8 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # todo: simPos may be ahead of next call start time
     df = end_target_row(df, row2end, simPos, nextCall_start)
 
+    #----------------------
+    #----------------------
     #
     # the start has been shifted right
     nextCall_start = GetInfo(df, row_afterprevcall, 'start')
@@ -1024,10 +1011,15 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     row2end_predend = GetInfo(df, row2end, 'pred_end')
     for wake_row in wake_list:
         if wake_row <> row2end:
-            df = UpdateCell(df, wake_row, 'current_pos', row2end_predend)
+            local_pos = GetInfo(df, wake_row, 'current_pos')
+            #
+            # no need to update if current pos is ahead of previous row end time
+            if local_pos < row2end_predend:
+                df = UpdateCell(df, wake_row, 'current_pos', row2end_predend)
 
     #
     # move to row2end_end to nextcall_start
+    print('currpos {} to next call start {}'.format(row2end_predend, nextCall_start))
     df = move_wake_for_coming_call(df, row2end_predend, nextCall_start)
 
     #
@@ -1057,6 +1049,8 @@ def move_wake_for_coming_call(df_all, preEndT, curStartT):
 
     for wake_row in wake_list:
         wake_row_api = GetInfo(df, wake_row, 'api_type')
+        print('wake row {}, pred_end {}'.format(wake_row, GetInfo(df, wake_row, 'pred_end')))
+
         if wake_row_api in ['h2d', 'd2h']:
             bw = GetInfo(df, wake_row, 'bw')
             bytes_left = GetInfo(df, wake_row, 'bytes_left')
@@ -1069,6 +1063,13 @@ def move_wake_for_coming_call(df_all, preEndT, curStartT):
             df = UpdateCell(df, wake_row, 'bytes_left',  bytes_left_new)
             df = UpdateCell(df, wake_row, 'bytes_done',  bytes_done_new)
             df = UpdateCell(df, wake_row, 'current_pos', curStartT)
+
+    # warning
+    # check other wake kernels, if the start is behind curStartT still label the current pos
+    wake_kern_list = GetWakeKernList(df)
+    for row in wake_kern_list:
+        df = UpdateCell(df, row, 'current_pos', curStartT)
+        
     return df
 
 #------------------------------------------------------------------------------
@@ -1077,9 +1078,14 @@ def move_wake_for_coming_call(df_all, preEndT, curStartT):
 def end_target_row(df_all, row2nd, simT, curT):
     df = df_all.copy(deep=True)
     #
+    # pick max of simT and curT
+    #time_door = max(simT, curT)
+
+    #
     # find wake apis before curT
     wake_list = GetWakeListBefore(df, curT)
-    print('wake list {} '.format(wake_list))
+    print('Before time {}, wake list {} '.format(curT, wake_list))
+
     #
     # check row2nd api type
     mytype = GetInfo(df, row2nd, 'api_type')
@@ -1089,7 +1095,7 @@ def end_target_row(df_all, row2nd, simT, curT):
         # how many h2d ovlp during the interval
         h2d_list, _, _ = FindOvlp(df, wake_list)
         cc = len(h2d_list)
-        print cc
+        print('h2d cc {}'.format(cc))
         #
         # finish current row and update the pred time
         df = Finish_row_h2d(df, row2nd, simT, ways = cc)
