@@ -265,7 +265,12 @@ def FinishRestWakeCalls(df_all):
             letftime = bytes_left / bw
 
             bytes_done = row.bytes_done
-            donetime = bytes_done / bw 
+            prevtime = bytes_done / bw 
+
+            myend = row.start + (prevtime + lefttime) 
+            df.set_value(index, 'end', myend)
+            df.set_value(index, 'pred_end', myend)
+            df.set_value(index, 'status', 'done')
 
 
         if api == 'h2d':
