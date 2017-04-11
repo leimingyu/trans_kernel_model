@@ -260,6 +260,7 @@ def FinishRestWakeCalls(df_all):
         #
         # assume there is no ovlp 
         if api == 'd2h':
+            tot = row.size_kb
             bw = row.bw
             bytes_left = row.bytes_left
             left_time = bytes_left / bw
@@ -270,9 +271,10 @@ def FinishRestWakeCalls(df_all):
             myend = row.start + (prev_time + left_time) 
             df.set_value(index, 'end', myend)
             df.set_value(index, 'pred_end', myend)
+            df.set_value(index, 'current_pos', myend)
 
-            df.set_value(index, 'bytes_done', myend)
-            df.set_value(index, 'bytes_left', myend)
+            df.set_value(index, 'bytes_done', tot)
+            df.set_value(index, 'bytes_left', 0)
 
             df.set_value(index, 'status', 'done')
 
