@@ -258,13 +258,12 @@ def FinishRestWakeCalls(df_all):
             df.set_value(index, 'status', 'done')
 
         #
-        # assume there is no conflict
+        # assume there is no ovlp 
         if api == 'd2h':
 
 
         if api == 'h2d':
-            sys.stderr
-
+            sys.stderr.write('h2d at last? check your kernel')
 
     return df
 
