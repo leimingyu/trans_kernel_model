@@ -466,7 +466,7 @@ def Find_prevapi_samestream(df_all, r2, r2_stream):
 #------------------------------------------------------------------------------
 def NoMoreSleepCalls(df):
     df_sleep = df.loc[df.status == 'sleep']
-
+    return True if df_sleep.empty else False
 
 
 #------------------------------------------------------------------------------
