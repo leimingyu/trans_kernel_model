@@ -254,6 +254,8 @@ def FinishRestWakeCalls(df_all):
     df_wake = df.loc[df.status == 'wake']
     for index, row in df_wake.iterrows():
         api = row.api_type
+        if api == 'kern':
+            df.set_value(index, 'status', 'done')
 
 
     return df
