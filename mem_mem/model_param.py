@@ -262,12 +262,12 @@ def FinishRestWakeCalls(df_all):
         if api == 'd2h':
             bw = row.bw
             bytes_left = row.bytes_left
-            letftime = bytes_left / bw
+            left_time = bytes_left / bw
 
             bytes_done = row.bytes_done
-            prevtime = bytes_done / bw 
+            prev_time = bytes_done / bw 
 
-            myend = row.start + (prevtime + lefttime) 
+            myend = row.start + (prev_time + left_time) 
             df.set_value(index, 'end', myend)
             df.set_value(index, 'pred_end', myend)
             df.set_value(index, 'status', 'done')
