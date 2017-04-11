@@ -869,6 +869,9 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
     wake_list = GetWakeListByTime(df, begT, endT)
     print('wake list {} '.format(wake_list))
 
+    #wake_list = GetWakeListBefore(df, endT)
+    #print('wake list {} '.format(wake_list))
+
     # no wake api
     if not wake_list:
         return df
@@ -879,19 +882,27 @@ def update_by_range(df_all, begT, endT, Gpu, SM_resList, SM_traceList, stream_ke
     print ('d2h_list : {}'.format(d2h_list))
     print ('kern_list : {}'.format(kern_list))
 
+    #--------------------------------
     # check whether there is h2d ovlp
+    #--------------------------------
     if h2d_list:
         cc = len(h2d_list)
         print('cc {} for all the wake h2d list'.format(cc))
         for r in h2d_list: 
-            df = Update_h2d_bytes(df, r, begT, endT, ways = cc)
-        # check any h2d call
+            df = Update_trans_bytes(df, r, begT, endT, ways = cc)
 
+    #--------------------------------
     # check whether there is d2h ovlp
+    #--------------------------------
     if d2h_list:
-        pass
+        cc = len(d2h_list)
+        print('cc {} for all the wake d2h list'.format(cc))
+        for r in d2h_list: 
+            df = Update_trans_bytes(df, r, begT, endT, ways = cc)
 
+    #--------------------------------
     # check whether there is kern ovlp
+    #--------------------------------
     if kern_list:
         """
         First, we need to check whether the kernel is already running
@@ -978,7 +989,7 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     # find out which call to terminate
     df_wake = df.loc[df.status == 'wake']
     wake_list = FindWakeList(df_wake) 
-    print(wake_list)
+    print('check_activestream_and_update : wakelist {}'.format(wake_list))
 
     # sort
     df_sorted = df_wake.sort_values(['pred_end'],ascending = True)
@@ -992,8 +1003,29 @@ def check_activestream_and_update(df_all, activestream_dd, simPos):
     #
     # find out the next call after row2nd
     row_afterprevcall = Find_nextcall_samestream(df, row2end, row2end_stream)
-    nextCall_start = GetInfo(df, row_afterprevcall, 'start')
-    print('next call after : {}'.format(row_afterprevcall))
+    print('row_afterprevcall {}'.format(row_afterprevcall))
+    print('-----')
+
+    if row_afterprevcall is not None:  
+        nextCall_start = GetInfo(df, row_afterprevcall, 'start')
+        print('next call after : {}'.format(row_afterprevcall))
+    else:
+        # the last call when row_afterprevcall is None
+        # 1) finish row2end 2) set stream to none
+        df = FinishLastCall(df, row2end)
+        as_dd[row2end_stream] = None
+        simPos = GetInfo(df, row2end, 'end')
+        # 
+        # move current_pos to row2nd pred_end
+        row2end_predend = GetInfo(df, row2end, 'pred_end')
+        for wake_row in wake_list:
+            if wake_row <> row2end:
+                local_pos = GetInfo(df, wake_row, 'current_pos')
+                # no need to update if current pos is ahead of previous row end time
+                if local_pos < row2end_predend:
+                    df = UpdateCell(df, wake_row, 'current_pos', row2end_predend)
+        return df, as_dd, simPos
+
 
     #
     # end the target row, update the bytes for other call
@@ -1084,6 +1116,7 @@ def end_target_row(df_all, row2nd, simT, curT):
     #
     # find wake apis before curT
     wake_list = GetWakeListBefore(df, curT)
+    print('simT {},  curT{} '.format(simT, curT))
     print('Before time {}, wake list {} '.format(curT, wake_list))
 
     #
@@ -1114,8 +1147,12 @@ def end_target_row(df_all, row2nd, simT, curT):
 
 
     if mytype == 'd2h':
+        ##
+        ## how many d2h ovlp during the interval
+        #__, d2h_list, _ = FindOvlp(df, wake_list)
+        #cc = len(d2h_list)
+        #print('d2h cc {}'.format(cc))
         sys.stderr.write('end_target_row, d2h not implemented')
-        pass
 
 
     if mytype == 'kern':
