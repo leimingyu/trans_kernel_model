@@ -257,6 +257,14 @@ def FinishRestWakeCalls(df_all):
         if api == 'kern':
             df.set_value(index, 'status', 'done')
 
+        #
+        # assume there is no conflict
+        if api == 'd2h':
+
+
+        if api == 'h2d':
+            sys.stderr
+
 
     return df
 
