@@ -252,6 +252,8 @@ def Find_nextcall_samestream(df_all, row2nd, row2nd_stream):
 def FinishRestWakeCalls(df_all):
     df= df_all.copy(deep=True)
 
+    df_wake = df.loc[df.status == 'wake']
+
 
     return df
 
