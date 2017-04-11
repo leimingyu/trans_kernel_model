@@ -237,14 +237,54 @@ def Find_nextcall_samestream(df_all, row2nd, row2nd_stream):
     df_stream = df.loc[df.stream_id == row2nd_stream]
 
     Next = False
-    row = None
+    myrow = None
     for index, row in df_stream.iterrows():
         if Next:
-            row = index
+            myrow = index
             break
         if index == row2nd:
             Next = True
-    return row 
+    return myrow 
+
+
+#------------------------------------------------------------------------------
+# 
+#------------------------------------------------------------------------------
+def FinishLastCall(df_all, r1):
+    df= df_all.copy(deep=True)
+    myapi = GetInfo(df, r1, 'api_type')
+    mypred = GetInfo(df, r1, 'pred_end')
+    curT = GetInfo(df, r1, 'current_pos')
+
+    if myapi in ['d2h', 'h2d']:
+        #
+        # look for cc before pred_end
+        df_wake = df.loc[df.status == 'wake']
+        ways = 0
+        for index, row in df_wake.iterrows():
+            if row.api_type == myapi:
+                ways+=1
+
+        cc = float(ways)
+        trans_time = Compute_left_time(df, r1, ways = cc)
+        new_end = curT + trans_time # new pred end
+        tot_size = GetInfo(df, r1, 'size_kb')
+        # update info
+        df = UpdateCell(df, r1, 'bytes_done', tot_size) 
+        df = UpdateCell(df, r1, 'bytes_left', 0) 
+        df = UpdateCell(df, r1, 'current_pos', new_end) 
+        df = UpdateCell(df, r1, 'pred_end', new_end) 
+        df = UpdateCell(df, r1, 'end', new_end)  # noted
+        df = UpdateCell(df, r1, 'status', 'done') 
+
+    if myapi == 'kern':
+        # since it should be already modeling, use pred_end to end, and finish
+        df = UpdateCell(df, r1, 'end', mypred) 
+        df = UpdateCell(df, r1, 'current_pos', mypred) 
+        df = UpdateCell(df, r1, 'status', 'done') 
+        
+
+    return df
 
 
 #------------------------------------------------------------------------------
@@ -367,9 +407,9 @@ def UpdateCallAfterKernel(df_all, kernrow):
     return df
 
 #------------------------------------------------------------------------------
-# update h2d api by the concurrency 
+# update h2d/d2h api by the concurrency 
 #------------------------------------------------------------------------------
-def Update_h2d_bytes(df_all, row, startT, endT, ways = 1.0):
+def Update_trans_bytes(df_all, row, startT, endT, ways = 1.0):
     df = df_all.copy(deep=True)
     cc = float(ways)
 
