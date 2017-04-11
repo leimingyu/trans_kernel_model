@@ -260,6 +260,10 @@ def FinishRestWakeCalls(df_all):
         #
         # assume there is no ovlp 
         if api == 'd2h':
+            bw = row.bw
+            bytes_left = row.bytes_left
+            letftime = bytes_left / bw
+
 
 
         if api == 'h2d':
