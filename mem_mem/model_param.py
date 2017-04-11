@@ -270,6 +270,10 @@ def FinishRestWakeCalls(df_all):
             myend = row.start + (prev_time + left_time) 
             df.set_value(index, 'end', myend)
             df.set_value(index, 'pred_end', myend)
+
+            df.set_value(index, 'bytes_done', myend)
+            df.set_value(index, 'bytes_left', myend)
+
             df.set_value(index, 'status', 'done')
 
 
